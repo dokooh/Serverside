@@ -234,6 +234,68 @@ class ModelDownloader:
         
         logger.debug(f"📊 Download check complete. Available models: {list(downloaded.keys())}")
         return downloaded
+    
+    def download_all_models(self, force_download: bool = False) -> Dict[str, Any]:
+        """Download all configured models"""
+        logger.debug("🚀 Starting download of all configured models")
+        
+        results = {}
+        
+        for model_name in self.model_configs.keys():
+            logger.debug(f"📥 Processing model: {model_name}")
+            
+            try:
+                result = self.download_model(model_name, force_download)
+                
+                # Convert result to expected format for orchestrator
+                if result["status"] == "success":
+                    # Estimate size (since we don't have actual size calculation)
+                    estimated_size = 7.0 if "vicuna" in model_name.lower() else 1.0
+                    
+                    results[model_name] = {
+                        "repo_id": self.model_configs[model_name]["hf_repo"],
+                        "size_gb": estimated_size,
+                        "files": result.get("files", []),
+                        "path": result["path"],
+                        "type": result.get("type", "quantized")
+                    }
+                    logger.debug(f"✅ {model_name} download successful")
+                    
+                elif result["status"] == "partial":
+                    # Handle partial success (standard HF model not fully implemented)
+                    results[model_name] = {
+                        "repo_id": self.model_configs[model_name]["hf_repo"],
+                        "size_gb": 7.0 if "vicuna" in model_name.lower() else 1.0,
+                        "files": [],
+                        "path": result["path"],
+                        "type": "standard",
+                        "status": "partial",
+                        "message": result["message"]
+                    }
+                    logger.debug(f"⚠️ {model_name} partially successful: {result['message']}")
+                    
+                else:
+                    # Handle errors
+                    results[model_name] = {
+                        "error": result["error"]
+                    }
+                    logger.debug(f"❌ {model_name} download failed: {result['error']}")
+                    
+            except Exception as e:
+                logger.debug(f"💥 Exception downloading {model_name}: {str(e)}")
+                results[model_name] = {
+                    "error": str(e)
+                }
+        
+        # Save results to file for orchestrator
+        results_file = self.models_dir / "download_results.json"
+        with open(results_file, 'w') as f:
+            json.dump(results, f, indent=2)
+        
+        logger.debug(f"📊 Download results saved to {results_file}")
+        logger.debug(f"🎯 Download all models complete. Results: {len(results)} models processed")
+        
+        return results
 
 def main():
     """Main function for testing model downloader"""

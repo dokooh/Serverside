@@ -500,8 +500,8 @@ class ModelTester:
         logger.debug(f"🔧 Debug - Model info: {model_info}")
         logger.debug(f"🔧 Debug - Starting model test procedure...")
         
-        model_path = model_info["local_path"]
-        model_type = model_info["model_type"]
+        model_path = model_info["path"]  # Changed from "local_path" to "path"
+        model_type = model_info.get("type", "text-generation")  # Changed from "model_type" to "type" with default
         model_size = model_info.get("size_gb", "unknown")
         results = []
         

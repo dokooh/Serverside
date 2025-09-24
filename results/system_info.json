@@ -1,0 +1,14 @@
+{
+  "cpu_percent": 9.0,
+  "memory_used_gb": 26.807415008544922,
+  "memory_total_gb": 31.751651763916016,
+  "gpu_available": true,
+  "gpu_count": 1,
+  "gpu_memory_used_gb": 0.0,
+  "gpu_memory_total_gb": 4.0,
+  "python_version": "3.13.1 (tags/v3.13.1:0671451, Dec  3 2024, 19:06:28) [MSC v.1942 64 bit (AMD64)]",
+  "pytorch_version": "2.7.1+cu118",
+  "transformers_version": "4.57.0.dev0",
+  "cuda_available": true,
+  "recommended_device": "cuda"
+}

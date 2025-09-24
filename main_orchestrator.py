@@ -87,9 +87,9 @@ class ModelBenchmarkOrchestrator:
             logger.debug(f"✅ Debug - HF authentication completed")
         
         logger.debug("🔧 Debug - Initializing model downloader...")
-        self.downloader = ModelDownloader(cache_dir=str(self.cache_dir))
-        logger.info(f"✅ Downloader initialized with {len(self.downloader.models_config)} models configured")
-        logger.debug(f"🔧 Debug - Models to download: {list(self.downloader.models_config.keys())}")
+        self.downloader = ModelDownloader(models_dir=str(self.cache_dir))
+        logger.info(f"✅ Downloader initialized with {len(self.downloader.model_configs)} models configured")
+        logger.debug(f"🔧 Debug - Models to download: {list(self.downloader.model_configs.keys())}")
         
         # Download models
         logger.info("📥 Starting model downloads...")
