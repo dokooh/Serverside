@@ -64,13 +64,13 @@ def preview_models():
         model_count = 0
         
         # Display each model configuration
-        for model_key, config in downloader.models_config.items():
+        for model_key, config in downloader.model_configs.items():
             model_count += 1
             print(f"\n{model_count}. 🤖 {model_key.upper()}")
-            print(f"   📦 Repository: {config['primary']}")
-            print(f"   🏷️  Type: {config['type']}")
+            print(f"   📦 Repository: {config['hf_repo']}")
+            print(f"   🏷️  Type: {config.get('type', 'text-generation')}")
             print(f"   📏 Estimated Size: {format_size(config.get('estimated_size_gb', 1.0))}")
-            print(f"   ⚙️  Quantization: {'✅ 4-bit preferred' if config.get('quantized_alternatives') else '❌ Full precision only'}")
+            print(f"   ⚙️  Quantization: {'✅ Q2_K preferred' if config.get('prefer_q2k') else '✅ 4-bit preferred' if config.get('quantized_alternatives') else '❌ Full precision only'}")
             
             # Add alternatives if available
             quantized_alts = config.get('quantized_alternatives', [])
@@ -86,7 +86,7 @@ def preview_models():
         print(f"📈 SUMMARY:")
         print(f"   • Total Models: {model_count}")
         print(f"   • Estimated Total Size: {format_size(total_estimated_size)}")
-        print(f"   • Cache Directory: {downloader.cache_dir}")
+        print(f"   • Cache Directory: {downloader.models_dir}")
         print("=" * 50)
         
         print()
@@ -156,9 +156,9 @@ def show_detailed_model_info():
     
     downloader = ModelDownloader()
     
-    for model_key, config in downloader.models_config.items():
+    for model_key, config in downloader.model_configs.items():
         print(f"\n📦 {model_key.upper()}:")
-        print(f"   Primary: {config['primary']}")
+        print(f"   Primary: {config['hf_repo']}")
         
         # Show quantized alternatives
         quantized_alts = config.get('quantized_alternatives', [])
@@ -169,16 +169,12 @@ def show_detailed_model_info():
         
         # Try to get more info about the selected model
         try:
-            repo_id = downloader.find_best_model_variant(model_key)
+            repo_id = config['hf_repo']
             print(f"   🎯 Selected: {repo_id}")
             
-            # Show what type of model files we expect
-            if config['type'] == 'vision-text-to-text':
-                print(f"   📁 Expected files: model weights, tokenizer, image processor")
-                print(f"   🚀 Capabilities: Text + Vision understanding, OCR, Document analysis")
-            else:
-                print(f"   📁 Expected files: model weights, tokenizer")
-                print(f"   🚀 Capabilities: Text generation, Question answering")
+            # Show what type of model files we expect (all are text-generation models now)
+            print(f"   📁 Expected files: model weights, tokenizer")
+            print(f"   🚀 Capabilities: Text generation, Question answering")
                 
         except Exception as e:
             print(f"   ⚠️  Could not resolve best variant: {e}")

@@ -22,18 +22,41 @@ class ModelDownloader:
         self.models_dir.mkdir(exist_ok=True)
         logger.debug(f"📁 Models directory set to: {self.models_dir}")
         
-        # Core model configurations - updated for Vicuna-7B
+        # Core model configurations - updated with three new models
         self.model_configs = {
-            "vicuna-7b-v1.5": {
-                "hf_repo": "lmsys/vicuna-7b-v1.5",
+            "llama-3.2-1b": {
+                "hf_repo": "meta-llama/Llama-3.2-1B",
                 "quantized_alternatives": [
-                    "vicuna-7b-v1.5.Q2_K.gguf",  # Requested Q2_K preference
-                    "vicuna-7b-v1.5.Q4_K_M.gguf", 
-                    "vicuna-7b-v1.5.q4_0.gguf"
+                    "Llama-3.2-1B.Q4_K_M.gguf",
+                    "Llama-3.2-1B.Q2_K.gguf",
+                    "Llama-3.2-1B.q4_0.gguf"
                 ],
-                "size_category": "medium",
+                "size_category": "small",
                 "use_quantized": True,
-                "prefer_q2k": True  # Special preference for Q2_K as requested
+                "estimated_size_gb": 1.2
+            },
+            "tinyllama-1.1b": {
+                "hf_repo": "TinyLlama/TinyLlama-1.1B-Chat-v1.0",
+                "quantized_alternatives": [
+                    "TinyLlama-1.1B-Chat-v1.0.Q4_K_M.gguf",
+                    "TinyLlama-1.1B-Chat-v1.0.Q2_K.gguf",
+                    "TinyLlama-1.1B-Chat-v1.0.q4_0.gguf"
+                ],
+                "size_category": "tiny",
+                "use_quantized": True,
+                "estimated_size_gb": 0.3
+            },
+            "phi-3.5-vision-instruct": {
+                "hf_repo": "microsoft/Phi-3.5-vision-instruct",
+                "quantized_alternatives": [
+                    "Phi-3.5-vision-instruct.Q4_K_M.gguf",
+                    "Phi-3.5-vision-instruct.Q2_K.gguf",
+                    "Phi-3.5-vision-instruct.q4_0.gguf"
+                ],
+                "size_category": "small",
+                "use_quantized": True,
+                "estimated_size_gb": 2.2,
+                "type": "vision-text-to-text"  # Special type for vision model
             }
         }
         logger.debug(f"🔍 Model configurations loaded: {list(self.model_configs.keys())}")
@@ -249,8 +272,8 @@ class ModelDownloader:
                 
                 # Convert result to expected format for orchestrator
                 if result["status"] == "success":
-                    # Estimate size (since we don't have actual size calculation)
-                    estimated_size = 7.0 if "vicuna" in model_name.lower() else 1.0
+                    # Use configured size from model config
+                    estimated_size = self.model_configs[model_name].get("estimated_size_gb", 1.0)
                     
                     results[model_name] = {
                         "repo_id": self.model_configs[model_name]["hf_repo"],
@@ -319,7 +342,7 @@ def main():
     
     # Test download
     logger.info("⬇️ Testing download:")
-    result = downloader.download_model("vicuna-7b-v1.5")
+    result = downloader.download_model("llama-3.2-1b")
     logger.info(f"Download result: {result}")
 
 if __name__ == "__main__":
