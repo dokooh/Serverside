@@ -29,33 +29,28 @@ class ModelDownloader:
         
         # Model configurations with preferred quantized versions
         self.models_config = {
-            # "llama-3.2-1b": {
-            #     "primary": "meta-llama/Llama-3.2-1B",
-            #     "quantized_alternatives": [
-            #         "unsloth/Llama-3.2-1B-bnb-4bit",
-            #         "microsoft/Llama-3.2-1B-Instruct-GGUF",
-            #         "bartowski/Llama-3.2-1B-GGUF"
-            #     ],
-            #     "type": "text-generation"
-            # },
-            # "tinyllama": {
-            #     "primary": "TinyLlama/TinyLlama-1.1B-Chat-v1.0",
-            #     "quantized_alternatives": [
-            #         "TinyLlama/TinyLlama-1.1B-Chat-v1.0-GGUF",
-            #         "microsoft/TinyLlama-1.1B-Chat-v1.0-onnx"
-            #     ],
-            #     "type": "text-generation"
-            # },
-            # "kosmos-2": {
-            #     "primary": "microsoft/kosmos-2-patch14-224",
-            #     "quantized_alternatives": [],
-            #     "type": "vision-text-to-text"
-            # },
-            "phi-3.5-vision": {
-                "primary": "microsoft/Phi-3.5-vision-instruct",
+            "llama-3.2-1b": {
+                "primary": "meta-llama/Llama-3.2-1B",
                 "quantized_alternatives": [
-                    "microsoft/Phi-3.5-vision-instruct-onnx-cpu",
-                    "unsloth/Phi-3.5-vision-instruct-bnb-4bit"
+                    "unsloth/Llama-3.2-1B-bnb-4bit",
+                    "microsoft/Llama-3.2-1B-Instruct-GGUF",
+                    "bartowski/Llama-3.2-1B-GGUF"
+                ],
+                "type": "text-generation"
+            },
+            "tinyllama": {
+                "primary": "TinyLlama/TinyLlama-1.1B-Chat-v1.0",
+                "quantized_alternatives": [
+                    "TinyLlama/TinyLlama-1.1B-Chat-v1.0-GGUF",
+                    "microsoft/TinyLlama-1.1B-Chat-v1.0-onnx"
+                ],
+                "type": "text-generation"
+            },
+            "smolvlm-instruct": {
+                "primary": "HuggingFaceTB/SmolVLM-Instruct",
+                "quantized_alternatives": [
+                    "bartowski/SmolVLM-Instruct-GGUF",
+                    "mradermacher/SmolVLM-Instruct-GGUF"
                 ],
                 "type": "vision-text-to-text"
             }
@@ -80,16 +75,39 @@ class ModelDownloader:
         """Find the smallest available model variant"""
         config = self.models_config[model_key]
         
-        # Check quantized alternatives first
+        # For SmolVLM, prefer Q4_K_M GGUF if available
+        if model_key == "smolvlm-instruct":
+            for alt_repo in config["quantized_alternatives"]:
+                try:
+                    # Check if this is a GGUF repo and has Q4_K_M variant
+                    if "GGUF" in alt_repo:
+                        repo_info = self.api.repo_info(alt_repo)
+                        # Look for Q4_K_M files
+                        for sibling in repo_info.siblings:
+                            if "Q4_K_M" in sibling.rfilename:
+                                logger.info(f"Found preferred Q4_K_M GGUF variant in {alt_repo}")
+                                return alt_repo
+                except Exception as e:
+                    logger.warning(f"Could not check Q4_K_M in {alt_repo}: {e}")
+                    continue
+        
+        # Check quantized alternatives first (general case)
+        smallest_size = float('inf')
+        best_variant = None
+        
         for alt_repo in config["quantized_alternatives"]:
             try:
                 size = self.get_model_size(alt_repo)
-                if size is not None:
+                if size is not None and size < smallest_size:
+                    smallest_size = size
+                    best_variant = alt_repo
                     logger.info(f"Found quantized variant {alt_repo} ({size:.2f} GB)")
-                    return alt_repo
             except Exception as e:
                 logger.warning(f"Could not access {alt_repo}: {e}")
                 continue
+        
+        if best_variant:
+            return best_variant
         
         # Fall back to primary model
         primary = config["primary"]

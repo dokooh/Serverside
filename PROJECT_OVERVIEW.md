@@ -55,10 +55,9 @@ python example_usage.py
 - 🌡️ **Temperature** - GPU temperature monitoring
 
 ### Models Tested:
-1. **Llama-3.2-1B** (Meta) - Text generation, quantized if available
-2. **TinyLlama 1.1B** - Fast text generation
-3. **KOSMOS-2** (Microsoft) - Vision-language model
-4. **Phi-3.5-vision-instruct** (Microsoft) - Vision-instruction model
+1. **Llama-3.2-1B** (~1.2GB) - Meta's efficient language model, quantized if available
+2. **TinyLlama 1.1B** (~300MB) - Ultra-compact and fast text generation
+3. **SmolVLM-Instruct** (~1.1GB Q4_K_M GGUF) - HuggingFace's vision-language model with GGUF quantization
 
 ### Test Prompts:
 - General knowledge questions
@@ -190,10 +189,10 @@ export CUDA_VISIBLE_DEVICES="0"           # Use specific GPU
 
 | Component | Size | Notes |
 |-----------|------|-------|
-| Models | 5-20 GB | Quantized versions preferred |
+| Models | 2-4 GB | Small, efficient models with GGUF quantization |
 | Results | 10-100 MB | JSON data and logs |
 | Reports | 1-10 MB | HTML and images |
-| **Total** | **6-21 GB** | Depends on quantization |
+| **Total** | **3-5 GB** | Optimized for smaller footprint |
 
 ## 🔍 Troubleshooting Quick Reference
 

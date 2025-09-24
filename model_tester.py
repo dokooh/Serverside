@@ -23,6 +23,15 @@ from resource_monitor import BenchmarkRunner, BenchmarkResult
 
 logger = logging.getLogger(__name__)
 
+# Try to import GGUF support (optional)
+try:
+    from llama_cpp import Llama
+    GGUF_AVAILABLE = True
+    logger.debug("GGUF support available via llama-cpp-python")
+except ImportError:
+    GGUF_AVAILABLE = False
+    logger.debug("GGUF support not available - will use standard transformers")
+
 class ModelTester:
     """Tests individual model performance with various prompts"""
     
@@ -65,6 +74,82 @@ class ModelTester:
             bnb_4bit_use_double_quant=True,
             bnb_4bit_quant_type="nf4"
         )
+    
+    def is_gguf_model(self, model_path: str) -> bool:
+        """Check if model directory contains GGUF files"""
+        model_dir = Path(model_path)
+        return any(f.suffix.lower() == '.gguf' for f in model_dir.rglob('*.gguf'))
+    
+    def find_gguf_file(self, model_path: str, prefer_q4_k_m: bool = True) -> Optional[str]:
+        """Find the best GGUF file in the model directory"""
+        model_dir = Path(model_path)
+        gguf_files = list(model_dir.rglob('*.gguf'))
+        
+        if not gguf_files:
+            return None
+        
+        # Prefer Q4_K_M if available and requested
+        if prefer_q4_k_m:
+            for gguf_file in gguf_files:
+                if 'Q4_K_M' in gguf_file.name:
+                    logger.info(f"Found preferred Q4_K_M GGUF file: {gguf_file}")
+                    return str(gguf_file)
+        
+        # Otherwise, return the first GGUF file found
+        logger.info(f"Using GGUF file: {gguf_files[0]}")
+        return str(gguf_files[0])
+    
+    def load_gguf_model(self, model_path: str, model_key: str) -> Tuple[Any, Any]:
+        """Load a GGUF model using llama-cpp-python"""
+        if not GGUF_AVAILABLE:
+            logger.warning(f"GGUF support not available for {model_key}, falling back to transformers")
+            return self.load_vision_model_fallback(model_path, model_key)
+        
+        logger.info(f"Loading GGUF model: {model_key}")
+        
+        gguf_file = self.find_gguf_file(model_path)
+        if not gguf_file:
+            raise FileNotFoundError(f"No GGUF file found in {model_path}")
+        
+        try:
+            # Load GGUF model with llama-cpp-python
+            logger.info(f"Loading GGUF file: {gguf_file}")
+            
+            model = Llama(
+                model_path=gguf_file,
+                n_ctx=2048,  # Context length
+                n_gpu_layers=-1 if self.device == "cuda" else 0,  # Use GPU if available
+                verbose=False
+            )
+            
+            # Create a simple processor-like object for compatibility
+            class SimpleProcessor:
+                def __init__(self):
+                    pass
+                
+                def decode(self, tokens, skip_special_tokens=True):
+                    # For GGUF models, this will be handled differently
+                    return ""
+            
+            processor = SimpleProcessor()
+            
+            self.loaded_models[model_key] = model
+            self.loaded_processors[model_key] = processor
+            
+            logger.info(f"✓ GGUF model {model_key} loaded successfully")
+            return model, processor
+            
+        except Exception as e:
+            logger.error(f"❌ Failed to load GGUF model {model_key}: {e}")
+            logger.debug(f"Exception details: {type(e).__name__}: {e}")
+            raise
+    
+    def load_vision_model_fallback(self, model_path: str, model_key: str) -> Tuple[Any, Any]:
+        """Fallback method for loading vision models when GGUF is not available"""
+        logger.warning(f"Using fallback loading for {model_key}")
+        # This would use the standard transformers approach
+        # For now, we'll raise an error to indicate GGUF is needed
+        raise NotImplementedError(f"GGUF model {model_key} requires llama-cpp-python installation")
     
     def load_text_model(self, model_path: str, model_key: str) -> Tuple[Any, Any]:
         """Load a text generation model"""
@@ -133,6 +218,11 @@ class ModelTester:
         logger.info(f"Loading vision model: {model_key}")
         logger.debug(f"Model path: {model_path}")
         logger.debug(f"Device: {self.device}")
+        
+        # Check if this is a GGUF model
+        if self.is_gguf_model(model_path):
+            logger.info(f"Detected GGUF model for {model_key}")
+            return self.load_gguf_model(model_path, model_key)
         
         try:
             logger.debug(f"Loading processor for vision model {model_key}...")
@@ -235,6 +325,12 @@ class ModelTester:
         
         model = self.loaded_models[model_key]
         processor = self.loaded_processors[model_key]
+        
+        # Check if this is a GGUF model
+        if hasattr(model, 'create_completion'):  # llama-cpp-python model
+            logger.debug(f"Using GGUF model for text generation")
+            return self.generate_gguf_response(model, prompt, max_new_tokens)
+        
         logger.debug(f"Using model device: {model.device}")
         
         # Load image
@@ -280,6 +376,27 @@ class ModelTester:
             logger.debug(f"Cleaned response length: {len(response)} characters")
         
         return response
+    
+    def generate_gguf_response(self, model, prompt: str, max_new_tokens: int = 150) -> str:
+        """Generate response using GGUF model (llama-cpp-python)"""
+        logger.debug(f"Generating text with GGUF model, max tokens: {max_new_tokens}")
+        
+        try:
+            response = model.create_completion(
+                prompt=prompt,
+                max_tokens=max_new_tokens,
+                temperature=0.7,
+                top_p=0.9,
+                echo=False  # Don't include the prompt in response
+            )
+            
+            generated_text = response['choices'][0]['text'].strip()
+            logger.debug(f"GGUF response length: {len(generated_text)} characters")
+            return generated_text
+            
+        except Exception as e:
+            logger.error(f"GGUF generation failed: {e}")
+            return f"[GGUF generation failed: {str(e)}]"
     
     def generate_text_fallback(self, model_key: str, prompt: str, max_new_tokens: int = 150) -> str:
         """Fallback text generation for vision models"""

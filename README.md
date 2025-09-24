@@ -12,10 +12,9 @@ A comprehensive suite for downloading, testing, and benchmarking Hugging Face mo
 
 ## Models Tested
 
-1. **Llama-3.2-1B** (Meta)
-2. **TinyLlama 1.1B** (TinyLlama)
-3. **KOSMOS-2** (Microsoft) - Vision-Language model
-4. **Phi-3.5-vision-instruct** (Microsoft) - Vision-Language model
+1. **Llama-3.2-1B** (~1.2GB) - Meta's efficient language model
+2. **TinyLlama 1.1B** (~300MB) - Ultra-compact language model
+3. **SmolVLM-Instruct** (~1.1GB Q4_K_M GGUF) - HuggingFace's vision-language model
 
 ## Quick Start
 
