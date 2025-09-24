@@ -13,18 +13,28 @@ A comprehensive suite for downloading, testing, and benchmarking Hugging Face mo
 ## Models Tested
 
 1. **Llama-3.2-1B** (~1.2GB) - Meta's efficient language model
-2. **TinyLlama 1.1B** (~300MB) - Ultra-compact language model
-3. **SmolVLM-Instruct** (~1.1GB Q4_K_M GGUF) - HuggingFace's vision-language model
+2. **TinyLlama 1.1B** (~300MB) - Ultra-compact language model  
+3. **KOSMOS-2** (~800MB) - Microsoft's vision-language model for image captioning and visual Q&A
 
 ## Quick Start
 
-### 1. Install Dependencies
+### 1. Preview Models (Recommended First Step)
+
+```bash
+# Comprehensive model preview (no dependencies required)
+python simple_preview.py
+
+# Quick model list only
+python list_models.py
+```
+
+### 2. Install Dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### 2. Run Complete Pipeline
+### 3. Run Complete Pipeline
 
 ```bash
 python main_orchestrator.py
@@ -43,6 +53,37 @@ Results will be saved in the `./results/` directory:
 - `summary_report.json` - High-level summary and comparisons
 - `system_info.json` - System specifications
 - `pipeline.log` - Execution logs
+
+## Individual Scripts
+
+### Preview & Inspection
+
+```bash
+# Comprehensive preview (recommended - no dependencies needed)
+python simple_preview.py
+
+# Quick model list overview
+python list_models.py
+
+# Advanced preview (requires all dependencies installed)
+python preview_models.py
+```
+
+### Component-wise Execution
+
+```bash
+# Download models only
+python model_downloader.py
+
+# Test existing models only
+python model_tester.py
+
+# Generate reports from existing data
+python report_generator.py
+
+# Interactive usage examples
+python example_usage.py
+```
 
 ## Advanced Usage
 

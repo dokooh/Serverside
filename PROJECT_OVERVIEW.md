@@ -57,7 +57,7 @@ python example_usage.py
 ### Models Tested:
 1. **Llama-3.2-1B** (~1.2GB) - Meta's efficient language model, quantized if available
 2. **TinyLlama 1.1B** (~300MB) - Ultra-compact and fast text generation
-3. **SmolVLM-Instruct** (~1.1GB Q4_K_M GGUF) - HuggingFace's vision-language model with GGUF quantization
+3. **KOSMOS-2** (~800MB) - Microsoft's vision-language model for image captioning and visual Q&A
 
 ### Test Prompts:
 - General knowledge questions
