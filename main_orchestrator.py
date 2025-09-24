@@ -73,15 +73,23 @@ class ModelBenchmarkOrchestrator:
     def download_models(self, force_download: bool = False, hf_token: str = None) -> Dict:
         """Download all required models"""
         logger.info("=== PHASE 1: DOWNLOADING MODELS ===")
+        logger.debug(f"Cache directory: {self.cache_dir}")
+        logger.debug(f"Force download: {force_download}")
+        logger.debug(f"HF token provided: {hf_token is not None}")
         
         # Initialize downloader
         if hf_token:
+            logger.debug("Logging in to Hugging Face...")
             from huggingface_hub import login
             login(token=hf_token)
+            logger.info("✓ Logged in to Hugging Face")
         
+        logger.debug("Initializing model downloader...")
         self.downloader = ModelDownloader(cache_dir=str(self.cache_dir))
+        logger.info(f"✓ Downloader initialized with {len(self.downloader.models_config)} models configured")
         
         # Download models
+        logger.info("Starting model downloads...")
         download_results = self.downloader.download_all_models(force_download=force_download)
         
         # Log results
@@ -105,17 +113,25 @@ class ModelBenchmarkOrchestrator:
     def run_benchmarks(self) -> List:
         """Run benchmarks on all downloaded models"""
         logger.info("=== PHASE 2: RUNNING BENCHMARKS ===")
+        logger.debug(f"Models directory: {self.cache_dir}")
+        logger.debug(f"Target device: {self.device}")
         
         # Check if download results exist
         if not self.download_results_file.exists():
+            logger.error(f"Download results file not found: {self.download_results_file}")
             raise FileNotFoundError(f"Download results not found: {self.download_results_file}")
         
+        logger.debug(f"✓ Download results found: {self.download_results_file}")
+        
         # Initialize tester
+        logger.debug("Initializing model tester...")
         self.tester = ModelTester(models_dir=str(self.cache_dir), device=self.device)
         
-        logger.info(f"Using device: {self.tester.device}")
+        logger.info(f"✓ Tester initialized - Using device: {self.tester.device}")
+        logger.debug(f"Test prompts available: {len(self.tester.test_prompts)} text, {len(self.tester.vision_prompts)} vision")
         
         # Run tests
+        logger.info("🚀 Starting model benchmarks...")
         benchmark_results = self.tester.test_all_models(str(self.download_results_file))
         
         # Save results
@@ -256,34 +272,55 @@ class ModelBenchmarkOrchestrator:
                          skip_download: bool = False,
                          skip_benchmarks: bool = False) -> Dict:
         """Run the complete pipeline"""
-        logger.info("Starting full model benchmarking pipeline...")
+        logger.info("🚀 Starting full model benchmarking pipeline...")
+        logger.debug(f"Pipeline parameters:")
+        logger.debug(f"  - force_download: {force_download}")
+        logger.debug(f"  - skip_download: {skip_download}")
+        logger.debug(f"  - skip_benchmarks: {skip_benchmarks}")
+        logger.debug(f"  - device: {self.device}")
         
         # Check system
+        logger.info("🔍 Checking system requirements...")
         system_info = self.check_system_requirements()
-        logger.info(f"Running on: {system_info['recommended_device']}")
+        logger.info(f"✓ System check complete - Running on: {system_info['recommended_device']}")
+        logger.debug(f"System info: {system_info}")
         
         try:
             # Phase 1: Download models
             if not skip_download:
+                logger.info("📥 Phase 1: Model Download")
                 download_results = self.download_models(force_download, hf_token)
+                logger.info("✅ Phase 1 completed successfully")
             else:
-                logger.info("Skipping download phase")
+                logger.info("⏭️ Skipping download phase")
                 if not self.download_results_file.exists():
+                    logger.error("No download results found and download skipped")
                     raise FileNotFoundError("No download results found and download skipped")
+                logger.debug("✓ Found existing download results")
             
             # Phase 2: Run benchmarks
             if not skip_benchmarks:
+                logger.info("🧪 Phase 2: Model Benchmarking")
                 benchmark_results = self.run_benchmarks()
+                logger.info("✅ Phase 2 completed successfully")
             else:
-                logger.info("Skipping benchmark phase")
+                logger.info("⏭️ Skipping benchmark phase")
                 if not self.benchmark_results_file.exists():
+                    logger.error("No benchmark results found and benchmarks skipped")
                     raise FileNotFoundError("No benchmark results found and benchmarks skipped")
+                logger.debug("✓ Found existing benchmark results")
             
             # Phase 3: Generate report
+            logger.info("📊 Phase 3: Report Generation")
             summary_report = self.generate_summary_report()
+            logger.info("✅ Phase 3 completed successfully")
             
-            logger.info("=== PIPELINE COMPLETED SUCCESSFULLY ===")
-            logger.info(f"Results saved in: {self.output_dir}")
+            logger.info("🎉 === PIPELINE COMPLETED SUCCESSFULLY ===")
+            logger.info(f"📁 Results saved in: {self.output_dir}")
+            logger.debug(f"Generated files:")
+            logger.debug(f"  - {self.benchmark_results_file}")
+            logger.debug(f"  - {self.summary_report_file}")
+            logger.debug(f"  - {self.system_info_file}")
             
             return summary_report
             
