@@ -183,24 +183,60 @@ class ModelDownloader:
         
         repo_id = config["hf_repo"]
         model_path = self.models_dir / model_name
-        model_path.mkdir(exist_ok=True)
         
+        # Check if model already exists
+        if model_path.exists() and not force_redownload:
+            # Check if the directory has files
+            files = list(model_path.glob("*.json")) + list(model_path.glob("*.bin")) + list(model_path.glob("*.safetensors"))
+            if files:
+                logger.debug(f"✅ Model {model_name} already exists with {len(files)} files")
+                return {
+                    "status": "success",
+                    "message": "Model already downloaded", 
+                    "model": model_name,
+                    "path": str(model_path),
+                    "files": [f.name for f in files[:5]]  # Show first 5 files
+                }
+        
+        model_path.mkdir(exist_ok=True)
         logger.debug(f"📂 Model will be saved to: {model_path}")
         
         try:
-            # This is a simplified approach - in practice you might use:
-            # snapshot_download(repo_id, local_dir=model_path)
-            logger.debug("⚠️ Standard HuggingFace download not fully implemented")
+            from huggingface_hub import snapshot_download
+            
+            logger.debug(f"⬇️ Starting download of {repo_id}...")
+            logger.info(f"Downloading {model_name} from {repo_id}...")
+            
+            # Download the complete model
+            downloaded_path = snapshot_download(
+                repo_id=repo_id,
+                local_dir=str(model_path),
+                local_dir_use_symlinks=False,
+                resume_download=True
+            )
+            
+            # Count downloaded files
+            files = list(model_path.glob("*.*"))
+            logger.debug(f"✅ Downloaded {len(files)} files to {model_path}")
+            logger.info(f"✅ Successfully downloaded {model_name}")
+            
             return {
-                "status": "partial",
-                "message": "Standard model download needs implementation", 
+                "status": "success",
+                "message": f"Successfully downloaded {len(files)} files", 
                 "model": model_name,
-                "path": str(model_path)
+                "path": str(model_path),
+                "files": [f.name for f in files[:5]]  # Show first 5 files
             }
             
         except Exception as e:
             logger.debug(f"💥 Standard model download failed: {str(e)}")
-            raise
+            logger.error(f"Failed to download {model_name}: {str(e)}")
+            return {
+                "status": "error",
+                "error": str(e),
+                "model": model_name,
+                "path": str(model_path)
+            }
     
     def list_available_models(self) -> List[str]:
         """Return list of available model configurations"""
@@ -286,12 +322,16 @@ class ModelDownloader:
                     
                 elif result["status"] == "partial":
                     # Handle partial success (standard HF model not fully implemented)
+                    # Use configured size from model config
+                    estimated_size = self.model_configs[model_name].get("estimated_size_gb", 1.0)
+                    # Get model type from configuration
+                    model_type = self.model_configs[model_name].get("type", "text-generation")
                     results[model_name] = {
                         "repo_id": self.model_configs[model_name]["hf_repo"],
-                        "size_gb": 7.0 if "vicuna" in model_name.lower() else 1.0,
+                        "size_gb": estimated_size,
                         "files": [],
                         "path": result["path"],
-                        "type": "standard",
+                        "type": model_type,
                         "status": "partial",
                         "message": result["message"]
                     }
