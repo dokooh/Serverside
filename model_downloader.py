@@ -29,28 +29,28 @@ class ModelDownloader:
         
         # Model configurations with preferred quantized versions
         self.models_config = {
-            "llama-3.2-1b": {
-                "primary": "meta-llama/Llama-3.2-1B",
-                "quantized_alternatives": [
-                    "unsloth/Llama-3.2-1B-bnb-4bit",
-                    "microsoft/Llama-3.2-1B-Instruct-GGUF",
-                    "bartowski/Llama-3.2-1B-GGUF"
-                ],
-                "type": "text-generation"
-            },
-            "tinyllama": {
-                "primary": "TinyLlama/TinyLlama-1.1B-Chat-v1.0",
-                "quantized_alternatives": [
-                    "TinyLlama/TinyLlama-1.1B-Chat-v1.0-GGUF",
-                    "microsoft/TinyLlama-1.1B-Chat-v1.0-onnx"
-                ],
-                "type": "text-generation"
-            },
-            "kosmos-2": {
-                "primary": "microsoft/kosmos-2-patch14-224",
-                "quantized_alternatives": [],
-                "type": "vision-text-to-text"
-            },
+            # "llama-3.2-1b": {
+            #     "primary": "meta-llama/Llama-3.2-1B",
+            #     "quantized_alternatives": [
+            #         "unsloth/Llama-3.2-1B-bnb-4bit",
+            #         "microsoft/Llama-3.2-1B-Instruct-GGUF",
+            #         "bartowski/Llama-3.2-1B-GGUF"
+            #     ],
+            #     "type": "text-generation"
+            # },
+            # "tinyllama": {
+            #     "primary": "TinyLlama/TinyLlama-1.1B-Chat-v1.0",
+            #     "quantized_alternatives": [
+            #         "TinyLlama/TinyLlama-1.1B-Chat-v1.0-GGUF",
+            #         "microsoft/TinyLlama-1.1B-Chat-v1.0-onnx"
+            #     ],
+            #     "type": "text-generation"
+            # },
+            # "kosmos-2": {
+            #     "primary": "microsoft/kosmos-2-patch14-224",
+            #     "quantized_alternatives": [],
+            #     "type": "vision-text-to-text"
+            # },
             "phi-3.5-vision": {
                 "primary": "microsoft/Phi-3.5-vision-instruct",
                 "quantized_alternatives": [
