@@ -72,39 +72,48 @@ class ModelBenchmarkOrchestrator:
     
     def download_models(self, force_download: bool = False, hf_token: str = None) -> Dict:
         """Download all required models"""
-        logger.info("=== PHASE 1: DOWNLOADING MODELS ===")
-        logger.debug(f"Cache directory: {self.cache_dir}")
-        logger.debug(f"Force download: {force_download}")
-        logger.debug(f"HF token provided: {hf_token is not None}")
+        logger.info("🚀 === PHASE 1: DOWNLOADING MODELS ===")
+        logger.debug(f"🔧 Debug - Cache directory: {self.cache_dir}")
+        logger.debug(f"🔧 Debug - Force download: {force_download}")
+        logger.debug(f"🔧 Debug - HF token provided: {hf_token is not None}")
+        logger.debug(f"🔧 Debug - Starting download phase...")
         
         # Initialize downloader
         if hf_token:
-            logger.debug("Logging in to Hugging Face...")
+            logger.debug("🔑 Debug - Logging in to Hugging Face...")
             from huggingface_hub import login
             login(token=hf_token)
-            logger.info("✓ Logged in to Hugging Face")
+            logger.info("✅ Logged in to Hugging Face")
+            logger.debug(f"✅ Debug - HF authentication completed")
         
-        logger.debug("Initializing model downloader...")
+        logger.debug("🔧 Debug - Initializing model downloader...")
         self.downloader = ModelDownloader(cache_dir=str(self.cache_dir))
-        logger.info(f"✓ Downloader initialized with {len(self.downloader.models_config)} models configured")
+        logger.info(f"✅ Downloader initialized with {len(self.downloader.models_config)} models configured")
+        logger.debug(f"🔧 Debug - Models to download: {list(self.downloader.models_config.keys())}")
         
         # Download models
-        logger.info("Starting model downloads...")
+        logger.info("📥 Starting model downloads...")
+        logger.debug(f"🔧 Debug - Calling download_all_models with force_download={force_download}")
         download_results = self.downloader.download_all_models(force_download=force_download)
+        logger.debug(f"🔧 Debug - Download process completed, processing results...")
         
         # Log results
-        logger.info("Download Summary:")
+        logger.info("📊 Download Summary:")
         total_size = 0
         successful_downloads = 0
         
+        logger.debug(f"🔧 Debug - Processing {len(download_results)} download results...")
         for model_key, result in download_results.items():
+            logger.debug(f"🔧 Debug - Processing result for {model_key}: {result}")
             if "error" in result:
-                logger.error(f"  {model_key}: FAILED - {result['error']}")
+                logger.error(f"  ❌ {model_key}: FAILED - {result['error']}")
+                logger.debug(f"🔧 Debug - Error details for {model_key}: {result}")
             else:
                 size = result['size_gb']
                 total_size += size
                 successful_downloads += 1
-                logger.info(f"  {model_key}: SUCCESS - {result['repo_id']} ({size:.2f} GB)")
+                logger.info(f"  ✅ {model_key}: SUCCESS - {result['repo_id']} ({size:.2f} GB)")
+                logger.debug(f"🔧 Debug - {model_key} files: {len(result.get('files', []))} files")
         
         logger.info(f"Total: {successful_downloads}/{len(download_results)} models downloaded ({total_size:.2f} GB)")
         
@@ -112,19 +121,23 @@ class ModelBenchmarkOrchestrator:
     
     def run_benchmarks(self) -> List:
         """Run benchmarks on all downloaded models"""
-        logger.info("=== PHASE 2: RUNNING BENCHMARKS ===")
-        logger.debug(f"Models directory: {self.cache_dir}")
-        logger.debug(f"Target device: {self.device}")
+        logger.info("🧪 === PHASE 2: RUNNING BENCHMARKS ===")
+        logger.debug(f"🔧 Debug - Models directory: {self.cache_dir}")
+        logger.debug(f"🔧 Debug - Target device: {self.device}")
+        logger.debug(f"🔧 Debug - Starting benchmark phase...")
         
         # Check if download results exist
+        logger.debug(f"🔍 Debug - Checking for download results at {self.download_results_file}")
         if not self.download_results_file.exists():
-            logger.error(f"Download results file not found: {self.download_results_file}")
+            logger.error(f"❌ Download results file not found: {self.download_results_file}")
+            logger.debug(f"🔧 Debug - Expected file path: {self.download_results_file}")
             raise FileNotFoundError(f"Download results not found: {self.download_results_file}")
         
-        logger.debug(f"✓ Download results found: {self.download_results_file}")
+        logger.debug(f"✅ Debug - Download results found: {self.download_results_file}")
         
         # Initialize tester
-        logger.debug("Initializing model tester...")
+        logger.debug("🔧 Debug - Initializing model tester...")
+        logger.debug(f"🔧 Debug - Using models_dir={self.cache_dir}, device={self.device}")
         self.tester = ModelTester(models_dir=str(self.cache_dir), device=self.device)
         
         logger.info(f"✓ Tester initialized - Using device: {self.tester.device}")

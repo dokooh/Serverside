@@ -135,45 +135,75 @@ class ModelTester:
     
     def find_gguf_file(self, model_path: str, prefer_q4_k_m: bool = True) -> Optional[str]:
         """Find the best GGUF file in the model directory"""
+        logger.debug(f"🔍 Debug - Searching for GGUF files in {model_path}")
+        logger.debug(f"🔧 Debug - Prefer Q4_K_M: {prefer_q4_k_m}")
+        
         model_dir = Path(model_path)
         gguf_files = list(model_dir.rglob('*.gguf'))
+        logger.debug(f"📁 Debug - Found {len(gguf_files)} GGUF files: {[f.name for f in gguf_files]}")
         
         if not gguf_files:
+            logger.debug(f"❌ Debug - No GGUF files found in {model_path}")
             return None
         
         # Prefer Q4_K_M if available and requested
         if prefer_q4_k_m:
+            logger.debug(f"🔍 Debug - Looking for Q4_K_M variant...")
             for gguf_file in gguf_files:
                 if 'Q4_K_M' in gguf_file.name:
-                    logger.info(f"Found preferred Q4_K_M GGUF file: {gguf_file}")
+                    logger.info(f"✅ Found preferred Q4_K_M GGUF file: {gguf_file}")
+                    logger.debug(f"📏 Debug - File size: {gguf_file.stat().st_size / (1024**3):.2f} GB")
                     return str(gguf_file)
+            logger.debug(f"⚠️ Debug - No Q4_K_M variant found")
+        
+        # Check for Q2_K variant for Vicuna-7B
+        for gguf_file in gguf_files:
+            if 'Q2_K' in gguf_file.name:
+                logger.info(f"✅ Found Q2_K GGUF file: {gguf_file}")
+                logger.debug(f"📏 Debug - File size: {gguf_file.stat().st_size / (1024**3):.2f} GB")
+                return str(gguf_file)
         
         # Otherwise, return the first GGUF file found
-        logger.info(f"Using GGUF file: {gguf_files[0]}")
-        return str(gguf_files[0])
+        selected_file = gguf_files[0]
+        logger.info(f"📄 Using GGUF file: {selected_file}")
+        logger.debug(f"📏 Debug - File size: {selected_file.stat().st_size / (1024**3):.2f} GB")
+        return str(selected_file)
     
     def load_gguf_model(self, model_path: str, model_key: str) -> Tuple[Any, Any]:
         """Load a GGUF model using llama-cpp-python"""
+        logger.debug(f"🔧 Debug - Loading GGUF model: {model_key} from {model_path}")
+        logger.debug(f"🔧 Debug - GGUF support available: {GGUF_AVAILABLE}")
+        
         if not GGUF_AVAILABLE:
-            logger.warning(f"GGUF support not available for {model_key}, falling back to transformers")
+            logger.warning(f"⚠️ GGUF support not available for {model_key}, falling back to transformers")
+            logger.debug(f"🔄 Debug - Calling fallback method for {model_key}")
             return self.load_vision_model_fallback(model_path, model_key)
         
-        logger.info(f"Loading GGUF model: {model_key}")
+        logger.info(f"🔧 Loading GGUF model: {model_key}")
         
+        logger.debug(f"🔍 Debug - Finding GGUF file in {model_path}...")
         gguf_file = self.find_gguf_file(model_path)
         if not gguf_file:
+            logger.debug(f"❌ Debug - No GGUF file found in {model_path}")
             raise FileNotFoundError(f"No GGUF file found in {model_path}")
+        
+        logger.debug(f"✅ Debug - Using GGUF file: {gguf_file}")
         
         try:
             # Load GGUF model with llama-cpp-python
-            logger.info(f"Loading GGUF file: {gguf_file}")
+            logger.info(f"📥 Loading GGUF file: {gguf_file}")
+            logger.debug(f"🔧 Debug - Device: {self.device}")
+            logger.debug(f"🔧 Debug - GPU layers: {-1 if self.device == 'cuda' else 0}")
+            logger.debug(f"🔧 Debug - Context length: 2048")
             
+            logger.debug(f"🚀 Debug - Initializing Llama model...")
             model = Llama(
                 model_path=gguf_file,
                 n_ctx=2048,  # Context length
                 n_gpu_layers=-1 if self.device == "cuda" else 0,  # Use GPU if available
                 verbose=False
             )
+            logger.debug(f"✅ Debug - Llama model initialized successfully")
             
             # Create a simple processor-like object for compatibility
             class SimpleProcessor:
@@ -467,7 +497,8 @@ class ModelTester:
     def test_model(self, model_key: str, model_info: Dict) -> List[BenchmarkResult]:
         """Test a single model with all appropriate prompts"""
         logger.info(f"🧪 Testing model: {model_key}")
-        logger.debug(f"Model info: {model_info}")
+        logger.debug(f"🔧 Debug - Model info: {model_info}")
+        logger.debug(f"🔧 Debug - Starting model test procedure...")
         
         model_path = model_info["local_path"]
         model_type = model_info["model_type"]

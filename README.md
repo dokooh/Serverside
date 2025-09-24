@@ -14,7 +14,7 @@ A comprehensive suite for downloading, testing, and benchmarking Hugging Face mo
 
 1. **Llama-3.2-1B** (~1.2GB) - Meta's efficient language model
 2. **TinyLlama 1.1B** (~300MB) - Ultra-compact language model  
-3. **KOSMOS-2** (~800MB) - Microsoft's vision-language model for image captioning and visual Q&A
+3. **Vicuna-7B-v1.5** (~2.5GB Q2_K GGUF) - LMSYS's conversational AI model with strong reasoning capabilities
 
 ## Quick Start
 

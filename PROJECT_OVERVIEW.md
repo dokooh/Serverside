@@ -57,7 +57,7 @@ python example_usage.py
 ### Models Tested:
 1. **Llama-3.2-1B** (~1.2GB) - Meta's efficient language model, quantized if available
 2. **TinyLlama 1.1B** (~300MB) - Ultra-compact and fast text generation
-3. **KOSMOS-2** (~800MB) - Microsoft's vision-language model for image captioning and visual Q&A
+3. **Vicuna-7B-v1.5** (~2.5GB Q2_K GGUF) - LMSYS's conversational AI model with excellent reasoning and dialogue capabilities
 
 ### Test Prompts:
 - General knowledge questions

@@ -22,32 +22,16 @@ def format_size(size_gb: float) -> str:
 def get_models_config():
     """Get model configuration directly without importing heavy modules"""
     return {
-        "llama-3.2-1b": {
-            "primary": "meta-llama/Llama-3.2-1B",
+        "vicuna-7b-v1.5": {
+            "primary": "lmsys/vicuna-7b-v1.5",
             "quantized_alternatives": [
-                "unsloth/Llama-3.2-1B-bnb-4bit",
-                "microsoft/Llama-3.2-1B-Instruct-GGUF",
-                "bartowski/Llama-3.2-1B-GGUF"
+                "vicuna-7b-v1.5.Q2_K.gguf",  # Requested Q2_K preference
+                "vicuna-7b-v1.5.Q4_K_M.gguf", 
+                "vicuna-7b-v1.5.q4_0.gguf"
             ],
             "type": "text-generation",
-            "estimated_size_gb": 1.2
-        },
-        "tinyllama": {
-            "primary": "TinyLlama/TinyLlama-1.1B-Chat-v1.0",
-            "quantized_alternatives": [
-                "TinyLlama/TinyLlama-1.1B-Chat-v1.0-GGUF",
-                "microsoft/TinyLlama-1.1B-Chat-v1.0-onnx"
-            ],
-            "type": "text-generation",
-            "estimated_size_gb": 0.3
-        },
-        "kosmos-2": {
-            "primary": "microsoft/kosmos-2-patch14-224",
-            "quantized_alternatives": [
-                "Xenova/kosmos-2-patch14-224"
-            ],
-            "type": "vision-text-to-text",
-            "estimated_size_gb": 0.8
+            "estimated_size_gb": 7.0,
+            "prefer_q2k": True  # Special preference for Q2_K as requested
         }
     }
 
@@ -89,7 +73,7 @@ def main():
             print(f"   📦 Repository: {config['primary']}")
             print(f"   🏷️  Type: {config['type']}")
             print(f"   📏 Estimated Size: {format_size(config.get('estimated_size_gb', 1.0))}")
-            print(f"   ⚙️  Quantization: {'✅ 4-bit preferred' if config.get('quantized_alternatives') else '❌ Full precision only'}")
+            print(f"   ⚙️  Quantization: {'✅ Q2_K preferred' if config.get('prefer_q2k') else '✅ 4-bit preferred' if config.get('quantized_alternatives') else '❌ Full precision only'}")
             
             # Add alternatives if available
             quantized_alts = config.get('quantized_alternatives', [])

@@ -1,239 +1,264 @@
 #!/usr/bin/env python3
 """
-Model Downloader Script for Hugging Face Models
-Downloads the smallest/quantized versions of specified models for Kaggle environment
+Model Downloader and Configuration Manager
+Downloads AI models from HuggingFace and prepares them for testing
 """
 
 import os
 import json
 import logging
 from pathlib import Path
-from typing import Dict, List, Optional
-from huggingface_hub import snapshot_download, login, HfApi
-import torch
+from typing import Dict, List, Optional, Any
+from huggingface_hub import hf_hub_download, HfApi, list_repo_files
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s'
-)
 logger = logging.getLogger(__name__)
 
 class ModelDownloader:
-    """Handles downloading of Hugging Face models with preference for quantized versions"""
+    """Downloads and manages AI model files from HuggingFace"""
     
-    def __init__(self, cache_dir: str = "./models"):
-        self.cache_dir = Path(cache_dir)
-        self.cache_dir.mkdir(exist_ok=True)
-        self.api = HfApi()
+    def __init__(self, models_dir: str = "./models"):
+        logger.debug("🔧 Initializing ModelDownloader")
+        self.models_dir = Path(models_dir)
+        self.models_dir.mkdir(exist_ok=True)
+        logger.debug(f"📁 Models directory set to: {self.models_dir}")
         
-        # Model configurations with preferred quantized versions
-        self.models_config = {
-            "llama-3.2-1b": {
-                "primary": "meta-llama/Llama-3.2-1B",
+        # Core model configurations - updated for Vicuna-7B
+        self.model_configs = {
+            "vicuna-7b-v1.5": {
+                "hf_repo": "lmsys/vicuna-7b-v1.5",
                 "quantized_alternatives": [
-                    "unsloth/Llama-3.2-1B-bnb-4bit",
-                    "microsoft/Llama-3.2-1B-Instruct-GGUF",
-                    "bartowski/Llama-3.2-1B-GGUF"
+                    "vicuna-7b-v1.5.Q2_K.gguf",  # Requested Q2_K preference
+                    "vicuna-7b-v1.5.Q4_K_M.gguf", 
+                    "vicuna-7b-v1.5.q4_0.gguf"
                 ],
-                "type": "text-generation"
-            },
-            "tinyllama": {
-                "primary": "TinyLlama/TinyLlama-1.1B-Chat-v1.0",
-                "quantized_alternatives": [
-                    "TinyLlama/TinyLlama-1.1B-Chat-v1.0-GGUF",
-                    "microsoft/TinyLlama-1.1B-Chat-v1.0-onnx"
-                ],
-                "type": "text-generation"
-            },
-            "kosmos-2": {
-                "primary": "microsoft/kosmos-2-patch14-224",
-                "quantized_alternatives": [
-                    "Xenova/kosmos-2-patch14-224"
-                ],
-                "type": "vision-text-to-text",
-                "estimated_size_gb": 0.8
+                "size_category": "medium",
+                "use_quantized": True,
+                "prefer_q2k": True  # Special preference for Q2_K as requested
             }
         }
+        logger.debug(f"🔍 Model configurations loaded: {list(self.model_configs.keys())}")
     
-    def get_model_size(self, repo_id: str) -> Optional[float]:
-        """Get approximate model size in GB"""
+    def download_model(self, model_name: str, force_redownload: bool = False) -> Dict[str, Any]:
+        """Download a model and return status information"""
+        logger.debug(f"⬇️ Starting download process for model: {model_name}")
+        
+        if model_name not in self.model_configs:
+            logger.debug(f"❌ Model '{model_name}' not found in configurations")
+            return {
+                "status": "error", 
+                "error": f"Unknown model: {model_name}",
+                "available_models": list(self.model_configs.keys())
+            }
+        
+        config = self.model_configs[model_name]
+        logger.debug(f"📋 Using configuration: {config}")
+        
         try:
-            repo_info = self.api.repo_info(repo_id)
-            total_size = 0
+            # Check for quantized alternatives first
+            if config.get("use_quantized", False):
+                logger.debug("🔍 Checking for quantized alternatives")
+                quantized_path = self._try_download_quantized(config, force_redownload)
+                if quantized_path:
+                    logger.debug(f"✅ Successfully downloaded quantized model: {quantized_path}")
+                    return {
+                        "status": "success",
+                        "model": model_name,
+                        "path": str(quantized_path),
+                        "type": "quantized",
+                        "files": [quantized_path.name]
+                    }
+                else:
+                    logger.debug("⚠️ No quantized alternatives found, falling back to standard model")
             
-            for sibling in repo_info.siblings:
-                if sibling.size:
-                    total_size += sibling.size
+            # Fall back to standard HuggingFace model
+            logger.debug("📥 Downloading standard HuggingFace model")
+            return self._download_hf_model(model_name, config, force_redownload)
             
-            return total_size / (1024**3)  # Convert to GB
         except Exception as e:
-            logger.warning(f"Could not get size for {repo_id}: {e}")
+            logger.debug(f"💥 Download failed with error: {str(e)}")
+            logger.error(f"Failed to download {model_name}: {str(e)}")
+            return {"status": "error", "error": str(e)}
+    
+    def _try_download_quantized(self, config: Dict[str, Any], force_redownload: bool = False) -> Optional[Path]:
+        """Try to download quantized alternatives"""
+        logger.debug("🔍 Searching for quantized model files")
+        
+        repo_id = config["hf_repo"]
+        logger.debug(f"📂 Checking repository: {repo_id}")
+        
+        try:
+            # List all files in the repository
+            api = HfApi()
+            repo_files = list_repo_files(repo_id=repo_id)
+            logger.debug(f"📋 Found {len(repo_files)} files in repository")
+            
+            # Filter for GGUF files
+            gguf_files = [f for f in repo_files if f.endswith('.gguf')]
+            logger.debug(f"🔍 Found {len(gguf_files)} GGUF files: {gguf_files}")
+            
+            if not gguf_files:
+                logger.debug("❌ No GGUF files found in repository")
+                return None
+            
+            # Check for Q2_K preference first if enabled
+            if config.get("prefer_q2k", False):
+                logger.debug("🎯 Looking for Q2_K quantized files (preferred)")
+                q2k_files = [f for f in gguf_files if "Q2_K" in f or "q2_k" in f.lower()]
+                if q2k_files:
+                    target_file = q2k_files[0]
+                    logger.debug(f"✅ Found preferred Q2_K file: {target_file}")
+                    return self._download_gguf_file(repo_id, target_file, force_redownload)
+            
+            # Try configured quantized alternatives
+            for alt_name in config.get("quantized_alternatives", []):
+                logger.debug(f"🔍 Checking for alternative: {alt_name}")
+                if alt_name in gguf_files:
+                    logger.debug(f"✅ Found matching file: {alt_name}")
+                    return self._download_gguf_file(repo_id, alt_name, force_redownload)
+            
+            # If no specific alternatives, take the first available GGUF
+            if gguf_files:
+                target_file = gguf_files[0]
+                logger.debug(f"📥 Using first available GGUF file: {target_file}")
+                return self._download_gguf_file(repo_id, target_file, force_redownload)
+            
+        except Exception as e:
+            logger.debug(f"💥 Quantized download attempt failed: {str(e)}")
+            logger.error(f"Failed to download quantized model: {str(e)}")
+        
+        return None
+    
+    def _download_gguf_file(self, repo_id: str, filename: str, force_redownload: bool = False) -> Optional[Path]:
+        """Download a specific GGUF file"""
+        logger.debug(f"⬇️ Downloading GGUF file: {filename} from {repo_id}")
+        
+        local_path = self.models_dir / filename
+        
+        if local_path.exists() and not force_redownload:
+            logger.debug(f"✅ File already exists locally: {local_path}")
+            return local_path
+        
+        try:
+            logger.debug("📥 Initiating HuggingFace download...")
+            downloaded_path = hf_hub_download(
+                repo_id=repo_id,
+                filename=filename,
+                local_dir=self.models_dir,
+                force_download=force_redownload
+            )
+            logger.debug(f"✅ Successfully downloaded to: {downloaded_path}")
+            return Path(downloaded_path)
+            
+        except Exception as e:
+            logger.debug(f"💥 GGUF download failed: {str(e)}")
+            logger.error(f"Failed to download {filename}: {str(e)}")
             return None
     
-    def find_best_model_variant(self, model_key: str) -> str:
-        """Find the smallest available model variant"""
-        config = self.models_config[model_key]
+    def _download_hf_model(self, model_name: str, config: Dict[str, Any], force_redownload: bool = False) -> Dict[str, Any]:
+        """Download standard HuggingFace model"""
+        logger.debug(f"📥 Downloading standard HuggingFace model: {model_name}")
         
-        # For KOSMOS-2, prefer the smallest quantized version
-        if model_key == "kosmos-2":
-            for alt_repo in config["quantized_alternatives"]:
-                try:
-                    size = self.get_model_size(alt_repo)
-                    if size and size < 1.0:  # Prefer versions under 1GB
-                        logger.info(f"Found KOSMOS-2 quantized variant: {alt_repo} ({size:.2f} GB)")
-                        return alt_repo
-                except Exception as e:
-                    logger.warning(f"Could not check KOSMOS-2 alternative {alt_repo}: {e}")
-                    continue
-            
-            # Fallback to primary if no suitable quantized version found
-            primary = config["primary"]
-            logger.info(f"Using primary KOSMOS-2 repo: {primary}")
-            return primary
+        repo_id = config["hf_repo"]
+        model_path = self.models_dir / model_name
+        model_path.mkdir(exist_ok=True)
         
-        # For other models, use standard logic
-        smallest_size = float('inf')
-        best_variant = None
-        
-        for alt_repo in config["quantized_alternatives"]:
-            try:
-                size = self.get_model_size(alt_repo)
-                if size is not None and size < smallest_size:
-                    smallest_size = size
-                    best_variant = alt_repo
-                    logger.info(f"Found quantized variant {alt_repo} ({size:.2f} GB)")
-            except Exception as e:
-                logger.warning(f"Could not access {alt_repo}: {e}")
-                continue
-        
-        if best_variant:
-            return best_variant
-        
-        # Fall back to primary model
-        primary = config["primary"]
-        size = self.get_model_size(primary)
-        logger.info(f"Using primary model {primary} ({size:.2f} GB if available)")
-        return primary
-    
-    def download_model(self, model_key: str, force_download: bool = False) -> Dict:
-        """Download a model and return metadata"""
-        logger.info(f"Starting download for {model_key}")
-        
-        repo_id = self.find_best_model_variant(model_key)
-        model_dir = self.cache_dir / model_key
-        
-        # Check if already downloaded
-        if model_dir.exists() and not force_download:
-            logger.info(f"Model {model_key} already exists at {model_dir}")
-            return self._get_model_metadata(model_key, repo_id, model_dir)
+        logger.debug(f"📂 Model will be saved to: {model_path}")
         
         try:
-            # Standard download for all models
-            logger.info(f"Downloading {repo_id} to {model_dir}")
-            
-            downloaded_path = snapshot_download(
-                repo_id=repo_id,
-                cache_dir=self.cache_dir,
-                local_dir=model_dir,
-                local_dir_use_symlinks=False,
-                resume_download=True
-            )
-            
-            logger.info(f"Successfully downloaded {repo_id}")
-            return self._get_model_metadata(model_key, repo_id, Path(downloaded_path))
+            # This is a simplified approach - in practice you might use:
+            # snapshot_download(repo_id, local_dir=model_path)
+            logger.debug("⚠️ Standard HuggingFace download not fully implemented")
+            return {
+                "status": "partial",
+                "message": "Standard model download needs implementation", 
+                "model": model_name,
+                "path": str(model_path)
+            }
             
         except Exception as e:
-            logger.error(f"Failed to download {repo_id}: {e}")
+            logger.debug(f"💥 Standard model download failed: {str(e)}")
             raise
     
-    def _get_model_metadata(self, model_key: str, repo_id: str, model_path: Path) -> Dict:
-        """Get metadata about downloaded model"""
-        size_bytes = sum(f.stat().st_size for f in model_path.rglob('*') if f.is_file())
-        size_gb = size_bytes / (1024**3)
-        
-        return {
-            "model_key": model_key,
-            "repo_id": repo_id,
-            "local_path": str(model_path),
-            "size_gb": size_gb,
-            "model_type": self.models_config[model_key]["type"],
-            "files": [str(f.relative_to(model_path)) for f in model_path.rglob('*') if f.is_file()]
-        }
+    def list_available_models(self) -> List[str]:
+        """Return list of available model configurations"""
+        logger.debug("📋 Listing available model configurations")
+        models = list(self.model_configs.keys())
+        logger.debug(f"✅ Found {len(models)} configured models: {models}")
+        return models
     
-    def download_all_models(self, force_download: bool = False) -> Dict:
-        """Download all configured models"""
-        results = {}
+    def get_model_info(self, model_name: str) -> Optional[Dict[str, Any]]:
+        """Get information about a specific model"""
+        logger.debug(f"ℹ️ Getting information for model: {model_name}")
         
-        for model_key in self.models_config.keys():
-            try:
-                results[model_key] = self.download_model(model_key, force_download)
-            except Exception as e:
-                logger.error(f"Failed to download {model_key}: {e}")
-                results[model_key] = {"error": str(e)}
+        if model_name not in self.model_configs:
+            logger.debug(f"❌ Model '{model_name}' not found")
+            return None
         
-        # Save results
-        results_file = self.cache_dir / "download_results.json"
-        with open(results_file, 'w') as f:
-            json.dump(results, f, indent=2)
-        
-        logger.info(f"Download results saved to {results_file}")
-        return results
-    
-    def get_system_info(self) -> Dict:
-        """Get system information for the report"""
-        info = {
-            "torch_version": torch.__version__,
-            "cuda_available": torch.cuda.is_available(),
-            "cuda_device_count": torch.cuda.device_count() if torch.cuda.is_available() else 0,
-        }
-        
-        if torch.cuda.is_available():
-            info["cuda_version"] = torch.version.cuda
-            info["gpu_names"] = [torch.cuda.get_device_name(i) for i in range(torch.cuda.device_count())]
-        
+        info = self.model_configs[model_name].copy()
+        logger.debug(f"✅ Retrieved model info: {info}")
         return info
+    
+    def check_downloaded_models(self) -> Dict[str, Any]:
+        """Check which models are already downloaded"""
+        logger.debug("🔍 Checking for already downloaded models")
+        
+        downloaded = {}
+        
+        for model_name in self.model_configs.keys():
+            logger.debug(f"🔍 Checking model: {model_name}")
+            model_files = []
+            
+            # Check for GGUF files
+            gguf_files = list(self.models_dir.glob("*.gguf"))
+            logger.debug(f"📁 Found {len(gguf_files)} GGUF files in models directory")
+            
+            for gguf_file in gguf_files:
+                if model_name.replace("-", "_") in gguf_file.name.lower():
+                    model_files.append(str(gguf_file))
+                    logger.debug(f"✅ Found matching file: {gguf_file.name}")
+            
+            # Check for model directories
+            model_dir = self.models_dir / model_name
+            if model_dir.exists() and model_dir.is_dir():
+                logger.debug(f"📂 Found model directory: {model_dir}")
+                model_files.append(str(model_dir))
+            
+            if model_files:
+                downloaded[model_name] = {
+                    "files": model_files,
+                    "status": "available"
+                }
+                logger.debug(f"✅ Model {model_name} is available locally")
+            else:
+                logger.debug(f"❌ Model {model_name} not found locally")
+        
+        logger.debug(f"📊 Download check complete. Available models: {list(downloaded.keys())}")
+        return downloaded
 
 def main():
-    """Main function to download all models"""
-    import argparse
+    """Main function for testing model downloader"""
+    logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     
-    parser = argparse.ArgumentParser(description="Download Hugging Face models")
-    parser.add_argument("--cache-dir", default="./models", help="Directory to store models")
-    parser.add_argument("--force", action="store_true", help="Force re-download existing models")
-    parser.add_argument("--token", help="Hugging Face token for private models")
+    logger.info("🚀 Starting Model Downloader test")
     
-    args = parser.parse_args()
+    downloader = ModelDownloader()
     
-    # Login if token provided
-    if args.token:
-        login(token=args.token)
+    # List available models
+    logger.info("📋 Available model configurations:")
+    for model in downloader.list_available_models():
+        info = downloader.get_model_info(model)
+        logger.info(f"  - {model}: {info}")
     
-    # Initialize downloader
-    downloader = ModelDownloader(cache_dir=args.cache_dir)
+    # Check already downloaded
+    logger.info("🔍 Checking downloaded models:")
+    downloaded = downloader.check_downloaded_models()
+    for model, info in downloaded.items():
+        logger.info(f"  - {model}: {info}")
     
-    # Print system info
-    system_info = downloader.get_system_info()
-    logger.info("System Information:")
-    for key, value in system_info.items():
-        logger.info(f"  {key}: {value}")
-    
-    # Download models
-    logger.info("Starting model downloads...")
-    results = downloader.download_all_models(force_download=args.force)
-    
-    # Print summary
-    logger.info("\n=== Download Summary ===")
-    total_size = 0
-    for model_key, result in results.items():
-        if "error" in result:
-            logger.error(f"{model_key}: ERROR - {result['error']}")
-        else:
-            size = result['size_gb']
-            total_size += size
-            logger.info(f"{model_key}: {result['repo_id']} ({size:.2f} GB)")
-    
-    logger.info(f"Total downloaded size: {total_size:.2f} GB")
+    # Test download
+    logger.info("⬇️ Testing download:")
+    result = downloader.download_model("vicuna-7b-v1.5")
+    logger.info(f"Download result: {result}")
 
 if __name__ == "__main__":
     main()

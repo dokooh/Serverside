@@ -24,14 +24,15 @@ def main():
     try:
         downloader = ModelDownloader()
         
-        for i, (model_key, config) in enumerate(downloader.models_config.items(), 1):
-            size_info = f"~{config.get('estimated_size_gb', 1.0):.1f}GB"
-            model_type = "🔤" if config['type'] == 'text-generation' else "👁️"
+        for i, (model_key, config) in enumerate(downloader.model_configs.items(), 1):
+            size_info = f"~{config.get('estimated_size_gb', 7.0):.1f}GB"
+            model_type = "🔤"  # Text generation model
             print(f"{i}. {model_type} {model_key.upper():<20} ({size_info})")
-            print(f"   📦 {config['primary']}")
+            print(f"   📦 {config['hf_repo']}")
+            print(f"   🎯 Prefers Q2_K: {config.get('prefer_q2k', False)}")
             print()
         
-        print(f"Total: {len(downloader.models_config)} models")
+        print(f"Total: {len(downloader.model_configs)} models")
         print("\nRun 'python preview_models.py' for detailed preview")
         print("Run 'python main_orchestrator.py' to start testing")
         
