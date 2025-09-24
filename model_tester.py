@@ -59,8 +59,46 @@ class ModelTester:
             "What is the main subject of this image?"
         ]
         
+        # Document processing prompts for OCR and document understanding
+        self.document_prompts = [
+            "Extract all visible text from this image and format it properly.",
+            "What type of document is this? (invoice, receipt, form, letter, etc.)",
+            "List all numbers, dates, and important information visible in this document.",
+            "Summarize the key points from this document image.",
+            "What is the main purpose or content of this document?",
+            "Identify any tables, forms, or structured data in this image.",
+            "Extract contact information (phone numbers, emails, addresses) if visible.",
+            "What language is this document written in?",
+            "Are there any signatures, logos, or special markings in this document?",
+            "Convert this handwritten text to digital text."
+        ]
+        
+        # Image QA prompts for detailed visual analysis
+        self.image_qa_prompts = [
+            "How many people are in this image?",
+            "What colors are most prominent in this image?",
+            "What time of day does this appear to be taken?",
+            "Is this an indoor or outdoor scene?",
+            "What emotions or mood does this image convey?",
+            "What brand names or text can you see in this image?",
+            "Describe the lighting conditions in this image.",
+            "What activities are happening in this image?",
+            "What is the approximate age or era of this image?",
+            "Are there any safety concerns visible in this image?"
+        ]
+        
         # Sample image URL for vision models
         self.sample_image_url = "https://upload.wikimedia.org/wikipedia/commons/thumb/d/dd/Gfp-wisconsin-madison-the-nature-boardwalk.jpg/2560px-Gfp-wisconsin-madison-the-nature-boardwalk.jpg"
+        
+        # Sample document images for OCR and document processing tests
+        self.document_images = [
+            # Reliable document samples from different sources
+            "https://via.placeholder.com/800x600/ffffff/000000?text=SAMPLE+INVOICE%0A%0AInvoice+%23001%0ADate%3A+2024-01-01%0A%0AFrom%3A+Company+ABC%0ATo%3A+Customer+XYZ%0A%0AItems%3A%0A1.+Service+A+-+%24100%0A2.+Product+B+-+%24200%0A%0ATotal%3A+%24300",
+            "https://via.placeholder.com/800x600/f0f0f0/333333?text=BUSINESS+LETTER%0A%0AJanuary+1%2C+2024%0A%0ADear+Customer%2C%0A%0AThank+you+for+your+business.%0AWe+appreciate+your+support.%0A%0ASincerely%2C%0AManagement+Team",
+            "https://via.placeholder.com/600x800/ffffff/000000?text=FORM+SAMPLE%0A%0AName%3A+________________%0A%0AEmail%3A+________________%0A%0APhone%3A+________________%0A%0AAddress%3A%0A__________________________%0A__________________________%0A%0ASignature%3A+____________",
+            # Fallback to the main sample image if document images fail
+            self.sample_image_url
+        ]
         
         self.loaded_models = {}
         self.loaded_tokenizers = {}
@@ -74,6 +112,21 @@ class ModelTester:
             bnb_4bit_use_double_quant=True,
             bnb_4bit_quant_type="nf4"
         )
+    
+    def categorize_prompt(self, prompt: str) -> str:
+        """Categorize prompt type for better testing context"""
+        prompt_lower = prompt.lower()
+        
+        if any(keyword in prompt_lower for keyword in ['extract', 'ocr', 'text from', 'visible text', 'handwritten']):
+            return "📄 OCR"
+        elif any(keyword in prompt_lower for keyword in ['document', 'invoice', 'receipt', 'form', 'letter', 'type of document']):
+            return "📋 Document Analysis"
+        elif any(keyword in prompt_lower for keyword in ['how many', 'count', 'colors', 'time of day', 'indoor', 'outdoor']):
+            return "❓ Image QA"
+        elif any(keyword in prompt_lower for keyword in ['describe', 'see in', 'objects', 'main subject']):
+            return "👁️ Vision Description"
+        else:
+            return "💬 General Text"
     
     def is_gguf_model(self, model_path: str) -> bool:
         """Check if model directory contains GGUF files"""
@@ -333,9 +386,17 @@ class ModelTester:
         
         logger.debug(f"Using model device: {model.device}")
         
-        # Load image
+        # Select appropriate image based on prompt type
         if image_url is None:
-            image_url = self.sample_image_url
+            if any(keyword in prompt.lower() for keyword in ['text', 'ocr', 'document', 'extract', 'handwritten', 'invoice', 'receipt', 'form', 'letter']):
+                # Use document image for OCR/document processing prompts
+                import random
+                image_url = random.choice(self.document_images)
+                logger.debug(f"🔍 Using document image for OCR/document prompt")
+            else:
+                # Use general image for other vision prompts
+                image_url = self.sample_image_url
+                logger.debug(f"🖼️ Using general image for vision prompt")
         
         logger.debug(f"Loading image from: {image_url}")
         try:
@@ -421,9 +482,13 @@ class ModelTester:
             if model_type == "vision-text-to-text":
                 logger.debug(f"Loading as vision-language model...")
                 self.load_vision_model(model_path, model_key)
-                prompts = self.vision_prompts + self.test_prompts[:3]  # Test fewer prompts for vision models
+                # Combine vision, document processing, and image QA prompts for comprehensive testing
+                prompts = (self.vision_prompts[:2] + 
+                          self.document_prompts[:3] + 
+                          self.image_qa_prompts[:2] + 
+                          self.test_prompts[:2])  # Mix of different prompt types
                 generation_func = self.generate_vision_response
-                logger.info(f"✓ Vision model loaded. Will test {len(prompts)} prompts")
+                logger.info(f"✓ Vision model loaded. Will test {len(prompts)} prompts (vision + OCR + image QA)")
             else:
                 logger.debug(f"Loading as text-only model...")
                 self.load_text_model(model_path, model_key)
@@ -436,7 +501,8 @@ class ModelTester:
             logger.info(f"🔄 Starting {total_prompts} prompt tests for {model_key}")
             
             for i, prompt in enumerate(prompts[:5]):  # Limit to 5 prompts per model to save time
-                logger.info(f"📝 Testing prompt {i+1}/{total_prompts}: {prompt[:50]}...")
+                prompt_category = self.categorize_prompt(prompt)
+                logger.info(f"📝 Testing prompt {i+1}/{total_prompts} [{prompt_category}]: {prompt[:50]}...")
                 logger.debug(f"Full prompt: {prompt}")
                 
                 try:
