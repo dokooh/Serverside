@@ -313,6 +313,9 @@ def main():
     
     args = parser.parse_args()
     
+    # Create output directory first (needed for log file)
+    Path(args.output_dir).mkdir(exist_ok=True)
+    
     # Setup logging
     logging.basicConfig(
         level=getattr(logging, args.log_level),
@@ -322,9 +325,6 @@ def main():
             logging.FileHandler(f"{args.output_dir}/pipeline.log")
         ]
     )
-    
-    # Create output directory
-    Path(args.output_dir).mkdir(exist_ok=True)
     
     # Initialize orchestrator
     orchestrator = ModelBenchmarkOrchestrator(
