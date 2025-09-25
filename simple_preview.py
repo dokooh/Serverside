@@ -22,16 +22,16 @@ def format_size(size_gb: float) -> str:
 def get_models_config():
     """Get model configuration directly without importing heavy modules"""
     return {
-        "vicuna-7b-v1.5": {
-            "primary": "lmsys/vicuna-7b-v1.5",
+        "phi-3.5-vision-instruct": {
+            "primary": "microsoft/Phi-3.5-vision-instruct",
             "quantized_alternatives": [
-                "vicuna-7b-v1.5.Q2_K.gguf",  # Requested Q2_K preference
-                "vicuna-7b-v1.5.Q4_K_M.gguf", 
-                "vicuna-7b-v1.5.q4_0.gguf"
+                "Phi-3.5-vision-instruct.Q4_K_M.gguf",
+                "Phi-3.5-vision-instruct.Q2_K.gguf",
+                "Phi-3.5-vision-instruct.q4_0.gguf"
             ],
-            "type": "text-generation",
-            "estimated_size_gb": 7.0,
-            "prefer_q2k": True  # Special preference for Q2_K as requested
+            "type": "vision-text-to-text",
+            "estimated_size_gb": 2.2,
+            "prefer_q2k": False  # Q4_K_M preferred for vision model
         }
     }
 

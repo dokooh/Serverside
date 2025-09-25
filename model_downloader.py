@@ -22,32 +22,8 @@ class ModelDownloader:
         self.models_dir.mkdir(exist_ok=True)
         logger.debug(f"📁 Models directory set to: {self.models_dir}")
         
-        # Core model configurations - updated with three new models
+        # Core model configurations - updated to only include Phi-3.5-vision-instruct
         self.model_configs = {
-            "gpt2-medium": {
-                "hf_repo": "gpt2-medium",
-                "type": "text-generation",
-                "quantized_alternatives": [
-                    "gpt2-medium.Q4_K_M.gguf",
-                    "gpt2-medium.Q2_K.gguf",
-                    "gpt2-medium.q4_0.gguf"
-                ],
-                "size_category": "small",
-                "use_quantized": False,  # GPT2 doesn't have GGUF alternatives typically
-                "estimated_size_gb": 1.5
-            },
-            "tinyllama-1.1b": {
-                "hf_repo": "TinyLlama/TinyLlama-1.1B-Chat-v1.0",
-                "type": "text-generation",
-                "quantized_alternatives": [
-                    "TinyLlama-1.1B-Chat-v1.0.Q4_K_M.gguf",
-                    "TinyLlama-1.1B-Chat-v1.0.Q2_K.gguf",
-                    "TinyLlama-1.1B-Chat-v1.0.q4_0.gguf"
-                ],
-                "size_category": "tiny",
-                "use_quantized": False,  # Disable quantized for now to test standard download
-                "estimated_size_gb": 0.3
-            },
             "phi-3.5-vision-instruct": {
                 "hf_repo": "microsoft/Phi-3.5-vision-instruct",
                 "quantized_alternatives": [
@@ -384,7 +360,7 @@ def main():
     
     # Test download
     logger.info("⬇️ Testing download:")
-    result = downloader.download_model("gpt2-medium")
+    result = downloader.download_model("phi-3.5-vision-instruct")
     logger.info(f"Download result: {result}")
 
 if __name__ == "__main__":
