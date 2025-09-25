@@ -148,7 +148,7 @@ class ModelBenchmarkOrchestrator:
         self.tester = ModelTester(models_dir=str(self.cache_dir), device=self.device)
         
         logger.info(f"✓ Tester initialized - Using device: {self.tester.device}")
-        logger.debug(f"Test prompts available: {len(self.tester.test_prompts)} text, {len(self.tester.vision_prompts)} vision")
+        logger.debug(f"Test prompts available: {len(self.tester.tool_selection_prompts)} tool selection, {len(self.tester.vision_prompts)} vision")
         
         # Run tests
         logger.info("🚀 Starting model benchmarks...")

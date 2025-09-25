@@ -71,7 +71,7 @@ def run_individual_components():
     logger.info("Step 1: Download models")
     from model_downloader import ModelDownloader
     
-    downloader = ModelDownloader(cache_dir="./models")
+    downloader = ModelDownloader(models_dir="./models")
     download_results = downloader.download_all_models()
     
     print(f"Downloaded {len(download_results)} models")
