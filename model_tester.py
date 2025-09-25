@@ -40,7 +40,35 @@ class ModelTester:
         self.device = device if device != "auto" else ("cuda" if torch.cuda.is_available() else "cpu")
         self.benchmark_runner = BenchmarkRunner(sampling_interval=0.1)
         
-        # Tool selection prompts for testing model ability to choose appropriate tools
+        # Comprehensive prompt sets - 10 prompts total covering all 7 types
+        # Each model will be tested with all these prompts
+        self.comprehensive_prompts = [
+            # Web Search Tool prompts (2 prompts)
+            "Get the public information about Tom Brady, use web-search tool.",
+            "Search for the latest stock price of Tesla using web-search tool.",
+            
+            # Calculation Tool prompts (2 prompts) 
+            "Calculate 30% of 12000.",
+            "What is 25 * 48 + 137?",
+            
+            # Image Analysis Tool prompts (2 prompts)
+            "User uploaded image, caption the purchase order details.",
+            "User uploaded image, extract and list all product information.",
+            
+            # OCR prompts (1 prompt)
+            "Extract all visible text from this image and format it properly.",
+            
+            # Document Analysis prompts (1 prompt)
+            "What type of document is this? (invoice, receipt, form, letter, etc.)",
+            
+            # Image QA prompts (1 prompt)
+            "How many people are in this image?",
+            
+            # Vision Description prompts (1 prompt)
+            "Describe what you see in this image."
+        ]
+        
+        # Legacy tool selection prompts (kept for backward compatibility)
         self.tool_selection_prompts = [
             "Get the public information about Tom Brady, use web-search tool.",
             "Search for the latest stock price of Tesla using web-search tool.",
@@ -59,6 +87,25 @@ class ModelTester:
             "Describe what you see in this image.",
             "What objects are present in this image?",
             "What is the main subject of this image?"
+        ]
+        
+        # Extended prompt categories for detailed testing
+        # Web Search Tool prompts
+        self.web_search_prompts = [
+            "Get the public information about Tom Brady, use web-search tool.",
+            "Search for the latest stock price of Tesla using web-search tool.",
+            "Find information about climate change effects using web-search tool.",
+            "Look up the definition of quantum computing using web-search tool.",
+            "Research the current population of Japan using web-search tool."
+        ]
+        
+        # Calculation Tool prompts
+        self.calculation_prompts = [
+            "Calculate 30% of 12000.",
+            "What is 25 * 48 + 137?",
+            "Compute the square root of 2025.",
+            "Calculate the compound interest on $5000 at 3% for 5 years.",
+            "Find the area of a circle with radius 7.5."
         ]
         
         # Image analysis tool selection prompts - for models to recognize they need image analysis tools
@@ -132,15 +179,15 @@ class ModelTester:
             return "🔍 Web Search Tool"
         elif any(keyword in prompt_lower for keyword in ['calculate', 'compute', 'what is', '*', '+', '-', '/', '%', 'area', 'interest']):
             return "🧮 Calculation Tool"  
-        elif any(keyword in prompt_lower for keyword in ['user uploaded image', 'caption the', 'extract', 'identify the document']):
+        elif any(keyword in prompt_lower for keyword in ['user uploaded image', 'caption the purchase', 'extract and list all product']):
             return "🖼️ Image Analysis Tool"
-        elif any(keyword in prompt_lower for keyword in ['extract', 'ocr', 'text from', 'visible text', 'handwritten']):
+        elif any(keyword in prompt_lower for keyword in ['extract all visible text', 'visible text', 'format it properly']):
             return "📄 OCR"
-        elif any(keyword in prompt_lower for keyword in ['document', 'invoice', 'receipt', 'form', 'letter', 'type of document']):
+        elif any(keyword in prompt_lower for keyword in ['what type of document', 'invoice', 'receipt', 'form', 'letter']):
             return "📋 Document Analysis"
-        elif any(keyword in prompt_lower for keyword in ['how many', 'count', 'colors', 'time of day', 'indoor', 'outdoor']):
+        elif any(keyword in prompt_lower for keyword in ['how many people', 'count', 'colors', 'time of day', 'indoor', 'outdoor']):
             return "❓ Image QA"
-        elif any(keyword in prompt_lower for keyword in ['describe', 'see in', 'objects', 'main subject']):
+        elif any(keyword in prompt_lower for keyword in ['describe what you see', 'see in this image', 'objects', 'main subject']):
             return "👁️ Vision Description"
         else:
             return "💬 General Text"
@@ -554,26 +601,21 @@ class ModelTester:
                 logger.debug(f"Loading as vision-language model...")
                 repo_id = model_info.get('repo_id', model_key)
                 self.load_vision_model(model_path, model_key, repo_id)
-                # Combine tool selection, vision, and image analysis prompts for comprehensive testing
-                prompts = (self.tool_selection_prompts[:3] + 
-                          self.image_analysis_prompts[:2] + 
-                          self.vision_prompts[:2] + 
-                          self.document_prompts[:2])  # Mix of tool selection and vision prompts
                 generation_func = self.generate_vision_response
-                logger.info(f"✓ Vision model loaded. Will test {len(prompts)} prompts (tool selection + vision + image analysis)")
+                logger.info(f"✓ Vision model loaded. Will test all 10 comprehensive prompts (all 7 types)")
             else:
                 logger.debug(f"Loading as text-only model...")
                 repo_id = model_info.get('repo_id', model_key)
                 self.load_text_model(model_path, model_key, repo_id)
-                prompts = self.tool_selection_prompts  # Focus on tool selection for text models
                 generation_func = self.generate_text_response
-                logger.info(f"✓ Text model loaded. Will test {len(prompts)} tool selection prompts")
+                logger.info(f"✓ Text model loaded. Will test all 10 comprehensive prompts (all 7 types)")
             
-            # Test each prompt
-            total_prompts = min(5, len(prompts))
-            logger.info(f"🔄 Starting {total_prompts} prompt tests for {model_key}")
+            # Use comprehensive prompts for all models (both text and vision)
+            prompts = self.comprehensive_prompts
+            total_prompts = len(prompts)  # Test all 10 prompts
+            logger.info(f"🔄 Starting {total_prompts} prompt tests for {model_key} covering all tool types")
             
-            for i, prompt in enumerate(prompts[:5]):  # Limit to 5 prompts per model to save time
+            for i, prompt in enumerate(prompts):  # Test all 10 prompts
                 prompt_category = self.categorize_prompt(prompt)
                 logger.info(f"📝 Testing prompt {i+1}/{total_prompts} [{prompt_category}]: {prompt[:50]}...")
                 logger.debug(f"Full prompt: {prompt}")
