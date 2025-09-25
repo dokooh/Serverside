@@ -150,10 +150,9 @@ class ModelTester:
         model_dir = Path(model_path)
         return any(f.suffix.lower() == '.gguf' for f in model_dir.rglob('*.gguf'))
     
-    def find_gguf_file(self, model_path: str, prefer_q4_k_m: bool = True) -> Optional[str]:
-        """Find the best GGUF file in the model directory"""
-        logger.debug(f"🔍 Debug - Searching for GGUF files in {model_path}")
-        logger.debug(f"🔧 Debug - Prefer Q4_K_M: {prefer_q4_k_m}")
+    def find_gguf_file(self, model_path: str, prefer_q2k_only: bool = True) -> Optional[str]:
+        """Find Q2_K GGUF file in the model directory"""
+        logger.debug(f"🔍 Debug - Searching for Q2_K GGUF files in {model_path}")
         
         model_dir = Path(model_path)
         gguf_files = list(model_dir.rglob('*.gguf'))
@@ -163,26 +162,19 @@ class ModelTester:
             logger.debug(f"❌ Debug - No GGUF files found in {model_path}")
             return None
         
-        # Prefer Q4_K_M if available and requested
-        if prefer_q4_k_m:
-            logger.debug(f"🔍 Debug - Looking for Q4_K_M variant...")
-            for gguf_file in gguf_files:
-                if 'Q4_K_M' in gguf_file.name:
-                    logger.info(f"✅ Found preferred Q4_K_M GGUF file: {gguf_file}")
-                    logger.debug(f"📏 Debug - File size: {gguf_file.stat().st_size / (1024**3):.2f} GB")
-                    return str(gguf_file)
-            logger.debug(f"⚠️ Debug - No Q4_K_M variant found")
-        
-        # Check for Q2_K variant for Vicuna-7B
+        # Look specifically for Q2_K quantization
+        logger.debug(f"🔍 Debug - Looking for Q2_K variant only...")
         for gguf_file in gguf_files:
             if 'Q2_K' in gguf_file.name:
                 logger.info(f"✅ Found Q2_K GGUF file: {gguf_file}")
                 logger.debug(f"📏 Debug - File size: {gguf_file.stat().st_size / (1024**3):.2f} GB")
                 return str(gguf_file)
         
-        # Otherwise, return the first GGUF file found
+        logger.warning(f"⚠️ No Q2_K variant found, falling back to first available GGUF file")
+        
+        # Fallback: return the first GGUF file found (should not happen if Q2_K is properly downloaded)
         selected_file = gguf_files[0]
-        logger.info(f"📄 Using GGUF file: {selected_file}")
+        logger.warning(f"📄 Using first available GGUF file as fallback: {selected_file}")
         logger.debug(f"📏 Debug - File size: {selected_file.stat().st_size / (1024**3):.2f} GB")
         return str(selected_file)
     

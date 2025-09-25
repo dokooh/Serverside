@@ -22,16 +22,32 @@ def format_size(size_gb: float) -> str:
 def get_models_config():
     """Get model configuration directly without importing heavy modules"""
     return {
+        "llama-3.2-1b": {
+            "primary": "meta-llama/Llama-3.2-1B",
+            "quantized_alternatives": [
+                "Llama-3.2-1B.Q2_K.gguf"  # Q2_K quantization only
+            ],
+            "type": "text-generation",
+            "estimated_size_gb": 0.5,  # Reduced size for Q2_K
+            "q2k_only": True  # Only Q2_K quantization
+        },
+        "tinyllama": {
+            "primary": "TinyLlama/TinyLlama-1.1B-Chat-v1.0",
+            "quantized_alternatives": [
+                "TinyLlama-1.1B-Chat-v1.0.Q2_K.gguf"  # Q2_K quantization only
+            ],  
+            "type": "text-generation",
+            "estimated_size_gb": 0.15,  # Reduced size for Q2_K
+            "q2k_only": True  # Only Q2_K quantization
+        },
         "smolvlm-instruct": {
             "primary": "HuggingFaceTB/SmolVLM-Instruct",
             "quantized_alternatives": [
-                "SmolVLM-Instruct.Q4_K_M.gguf",  # Preferred Q4_K_M quantization
-                "SmolVLM-Instruct.Q2_K.gguf",
-                "SmolVLM-Instruct.q4_0.gguf"
+                "SmolVLM-Instruct.Q2_K.gguf"  # Q2_K quantization only
             ],
             "type": "vision-text-to-text",
-            "estimated_size_gb": 1.1,
-            "prefer_q4k_m": True  # Specific Q4_K_M preference
+            "estimated_size_gb": 0.6,  # Reduced size for Q2_K
+            "q2k_only": True  # Only Q2_K quantization
         }
     }
 
@@ -74,7 +90,7 @@ def main():
             print(f"   📦 Repository: {config['primary']}")
             print(f"   🏷️  Type: {config['type']}")
             print(f"   📏 Estimated Size: {format_size(config.get('estimated_size_gb', 1.0))}")
-            print(f"   ⚙️  Quantization: {'✅ Q2_K preferred' if config.get('prefer_q2k') else '✅ 4-bit preferred' if config.get('quantized_alternatives') else '❌ Full precision only'}")
+            print(f"   ⚙️  Quantization: {'✅ Q2_K only' if config.get('q2k_only') else '✅ Q2_K preferred' if config.get('prefer_q2k') else '✅ 4-bit preferred' if config.get('quantized_alternatives') else '❌ Full precision only'}")
             
             # Add alternatives if available
             quantized_alts = config.get('quantized_alternatives', [])
