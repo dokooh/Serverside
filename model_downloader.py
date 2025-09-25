@@ -45,17 +45,6 @@ class ModelDownloader:
                 "use_quantized": True,  # Use Q2_K quantized version only
                 "estimated_size_gb": 0.15,  # Reduced size estimate for Q2_K
                 "prefer_q2k_only": True  # Only Q2_K quantization
-            },
-            "smolvlm-instruct": {
-                "hf_repo": "HuggingFaceTB/SmolVLM-Instruct",
-                "type": "vision-text-to-text",
-                "quantized_alternatives": [
-                    "SmolVLM-Instruct.Q2_K.gguf"  # Q2_K quantization only
-                ],
-                "size_category": "small",
-                "use_quantized": True,  # Use Q2_K quantized version only
-                "estimated_size_gb": 0.6,  # Reduced size estimate for Q2_K
-                "prefer_q2k_only": True  # Only Q2_K quantization
             }
         }
         logger.debug(f"🔍 Model configurations loaded: {list(self.model_configs.keys())}")

@@ -39,15 +39,6 @@ def get_models_config():
             "type": "text-generation",
             "estimated_size_gb": 0.15,  # Reduced size for Q2_K
             "q2k_only": True  # Only Q2_K quantization
-        },
-        "smolvlm-instruct": {
-            "primary": "HuggingFaceTB/SmolVLM-Instruct",
-            "quantized_alternatives": [
-                "SmolVLM-Instruct.Q2_K.gguf"  # Q2_K quantization only
-            ],
-            "type": "vision-text-to-text",
-            "estimated_size_gb": 0.6,  # Reduced size for Q2_K
-            "q2k_only": True  # Only Q2_K quantization
         }
     }
 
