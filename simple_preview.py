@@ -23,18 +23,18 @@ def get_models_config():
     """Get model configuration directly without importing heavy modules"""
     return {
         "llama-3.2-1b": {
-            "primary": "meta-llama/Llama-3.2-1B",
+            "primary": "bartowski/Llama-3.2-1B-Instruct-GGUF",
             "quantized_alternatives": [
-                "Llama-3.2-1B.Q2_K.gguf"  # Q2_K quantization only
+                "Auto-discover Q2_K files"  # Q2_K quantization auto-discovery
             ],
             "type": "text-generation",
             "estimated_size_gb": 0.5,  # Reduced size for Q2_K
             "q2k_only": True  # Only Q2_K quantization
         },
         "tinyllama": {
-            "primary": "TinyLlama/TinyLlama-1.1B-Chat-v1.0",
+            "primary": "TheBloke/TinyLlama-1.1B-Chat-v1.0-GGUF",
             "quantized_alternatives": [
-                "TinyLlama-1.1B-Chat-v1.0.Q2_K.gguf"  # Q2_K quantization only
+                "Auto-discover Q2_K files"  # Q2_K quantization auto-discovery
             ],  
             "type": "text-generation",
             "estimated_size_gb": 0.15,  # Reduced size for Q2_K

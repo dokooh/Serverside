@@ -25,26 +25,22 @@ class ModelDownloader:
         # Core model configurations - Q2_K.gguf quantization only
         self.model_configs = {
             "llama-3.2-1b": {
-                "hf_repo": "meta-llama/Llama-3.2-1B",
+                "hf_repo": "bartowski/Llama-3.2-1B-Instruct-GGUF",  # Repository with GGUF files
                 "type": "text-generation",
-                "quantized_alternatives": [
-                    "Llama-3.2-1B.Q2_K.gguf"  # Q2_K quantization only
-                ],
+                "quantized_alternatives": [],  # Let it auto-discover Q2_K files
                 "size_category": "small",
                 "use_quantized": True,  # Use Q2_K quantized version only
                 "estimated_size_gb": 0.5,  # Reduced size estimate for Q2_K
-                "prefer_q2k_only": True  # Only Q2_K quantization
+                "prefer_q2k": True  # Enable Q2_K preference for auto-discovery
             },
             "tinyllama": {
-                "hf_repo": "TinyLlama/TinyLlama-1.1B-Chat-v1.0",
+                "hf_repo": "TheBloke/TinyLlama-1.1B-Chat-v1.0-GGUF",  # Repository with GGUF files
                 "type": "text-generation",
-                "quantized_alternatives": [
-                    "TinyLlama-1.1B-Chat-v1.0.Q2_K.gguf"  # Q2_K quantization only
-                ],
+                "quantized_alternatives": [],  # Let it auto-discover Q2_K files
                 "size_category": "tiny",
                 "use_quantized": True,  # Use Q2_K quantized version only
                 "estimated_size_gb": 0.15,  # Reduced size estimate for Q2_K
-                "prefer_q2k_only": True  # Only Q2_K quantization
+                "prefer_q2k": True  # Enable Q2_K preference for auto-discovery
             }
         }
         logger.debug(f"🔍 Model configurations loaded: {list(self.model_configs.keys())}")
@@ -98,9 +94,9 @@ class ModelDownloader:
         logger.debug(f"📂 Checking repository: {repo_id}")
         
         try:
-            # List all files in the repository
-            api = HfApi()
-            repo_files = list_repo_files(repo_id=repo_id)
+            # List all files in the repository (without authentication for public repos)
+            api = HfApi(token=None)  # Explicitly use no token for public repos
+            repo_files = list_repo_files(repo_id=repo_id, token=None)  # Pass token=None explicitly
             logger.debug(f"📋 Found {len(repo_files)} files in repository")
             
             # Filter for GGUF files
@@ -155,7 +151,8 @@ class ModelDownloader:
                 repo_id=repo_id,
                 filename=filename,
                 local_dir=self.models_dir,
-                force_download=force_redownload
+                force_download=force_redownload,
+                token=None  # Don't use authentication for public repos
             )
             logger.debug(f"✅ Successfully downloaded to: {downloaded_path}")
             return Path(downloaded_path)
@@ -200,7 +197,8 @@ class ModelDownloader:
                 repo_id=repo_id,
                 local_dir=str(model_path),
                 local_dir_use_symlinks=False,
-                resume_download=True
+                resume_download=True,
+                token=None  # Don't use authentication for public repos
             )
             
             # Count downloaded files
