@@ -22,32 +22,10 @@ def format_size(size_gb: float) -> str:
 def get_models_config():
     """Get model configuration directly without importing heavy modules"""
     return {
-        "llama-3.2-1b": {
-            "primary": "meta-llama/Llama-3.2-1B",
-            "quantized_alternatives": [
-                "Llama-3.2-1B.Q4_K_M.gguf",
-                "Llama-3.2-1B.Q2_K.gguf",
-                "Llama-3.2-1B.q4_0.gguf"
-            ],
-            "type": "text-generation",
-            "estimated_size_gb": 1.2,
-            "prefer_q2k": False
-        },
-        "tinyllama": {
-            "primary": "TinyLlama/TinyLlama-1.1B-Chat-v1.0",
-            "quantized_alternatives": [
-                "TinyLlama-1.1B-Chat-v1.0.Q4_K_M.gguf",
-                "TinyLlama-1.1B-Chat-v1.0.Q2_K.gguf",
-                "TinyLlama-1.1B-Chat-v1.0.q4_0.gguf"
-            ],
-            "type": "text-generation",
-            "estimated_size_gb": 0.3,
-            "prefer_q2k": False
-        },
         "smolvlm-instruct": {
             "primary": "HuggingFaceTB/SmolVLM-Instruct",
             "quantized_alternatives": [
-                "SmolVLM-Instruct.Q4_K_M.gguf",
+                "SmolVLM-Instruct.Q4_K_M.gguf",  # Preferred Q4_K_M quantization
                 "SmolVLM-Instruct.Q2_K.gguf",
                 "SmolVLM-Instruct.q4_0.gguf"
             ],

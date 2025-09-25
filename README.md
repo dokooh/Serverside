@@ -12,9 +12,7 @@ A comprehensive suite for downloading, testing, and benchmarking Hugging Face mo
 
 ## Models Tested
 
-1. **Llama-3.2-1B** (~1.2GB) - Meta's efficient language model optimized for tool selection and reasoning
-2. **TinyLlama** (~300MB) - Ultra-compact language model for fast tool selection tasks  
-3. **HuggingFaceTB/SmolVLM-Instruct** (~1.1GB Q4_K_M GGUF) - Compact vision-language model for multimodal tool selection
+1. **HuggingFaceTB/SmolVLM-Instruct** (~1.1GB Q4_K_M GGUF) - Compact vision-language model for multimodal tool selection and image analysis
 
 ## Quick Start
 
@@ -201,8 +199,6 @@ python main_orchestrator.py --log-level DEBUG
 ├── requirements.txt         # Python dependencies
 ├── README.md               # This file
 ├── models/                 # Downloaded models (created)
-│   ├── llama-3.2-1b/
-│   ├── tinyllama/
 │   └── smolvlm-instruct/
 └── results/               # Output files (created)
     ├── benchmark_results.json

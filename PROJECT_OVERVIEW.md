@@ -55,9 +55,7 @@ python example_usage.py
 - 🌡️ **Temperature** - GPU temperature monitoring
 
 ### Models Tested:
-1. **Llama-3.2-1B** (~1.2GB) - Meta's efficient language model optimized for tool selection and reasoning tasks
-2. **TinyLlama** (~300MB) - Ultra-compact language model designed for fast tool selection and basic calculations
-3. **HuggingFaceTB/SmolVLM-Instruct** (~1.1GB Q4_K_M GGUF) - Compact vision-language model for multimodal tool selection with image understanding
+1. **HuggingFaceTB/SmolVLM-Instruct** (~1.1GB Q4_K_M GGUF) - Compact vision-language model for multimodal tool selection with image understanding and document analysis
 
 ### Test Prompts:
 **Tool Selection Prompts** (Primary Focus):
