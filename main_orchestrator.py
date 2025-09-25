@@ -13,6 +13,13 @@ import time
 from pathlib import Path
 from typing import Dict, List, Any
 
+# Configure simple logger for Windows compatibility
+try:
+    from simple_logger import configure_simple_logger
+    configure_simple_logger()
+except ImportError:
+    pass
+
 # Import our custom modules
 from model_downloader import ModelDownloader
 from model_tester import ModelTester

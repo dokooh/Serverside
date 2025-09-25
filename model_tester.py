@@ -234,7 +234,7 @@ class ModelTester:
         # For now, we'll raise an error to indicate GGUF is needed
         raise NotImplementedError(f"GGUF model {model_key} requires llama-cpp-python installation")
     
-    def load_text_model(self, model_path: str, model_key: str) -> Tuple[Any, Any]:
+    def load_text_model(self, model_path: str, model_key: str, repo_id: str = None) -> Tuple[Any, Any]:
         """Load a text generation model"""
         logger.info(f"Loading text model: {model_key}")
         logger.debug(f"Model path: {model_path}")
@@ -243,8 +243,13 @@ class ModelTester:
         try:
             # Try to load tokenizer
             logger.debug(f"Loading tokenizer for {model_key}...")
+            
+            # Use repo_id for tokenizer instead of local path if available
+            tokenizer_path = repo_id if repo_id else model_path
+            logger.debug(f"Using tokenizer path: {tokenizer_path}")
+            
             tokenizer = AutoTokenizer.from_pretrained(
-                model_path,
+                tokenizer_path,
                 trust_remote_code=True,
                 padding_side="left"
             )
@@ -262,6 +267,15 @@ class ModelTester:
                 "torch_dtype": torch.float16 if self.device == "cuda" else torch.float32,
             }
             
+            # Configure FlashAttention2
+            try:
+                import flash_attn
+                logger.debug(f"FlashAttention2 detected - enabling for {model_key}")
+                model_kwargs["attn_implementation"] = "flash_attention_2"
+            except ImportError:
+                logger.debug(f"FlashAttention2 not available - using standard attention for {model_key}")
+                model_kwargs["attn_implementation"] = "eager"
+            
             if self.device == "cuda":
                 logger.debug(f"Using CUDA configuration with quantization for {model_key}")
                 model_kwargs["quantization_config"] = self.get_quantization_config()
@@ -273,7 +287,7 @@ class ModelTester:
             logger.info(f"Loading model weights for {model_key}... (this may take a while)")
             
             model = AutoModelForCausalLM.from_pretrained(
-                model_path,
+                tokenizer_path,  # Use repo_id instead of local path for model loading too
                 **model_kwargs
             )
             logger.info(f"✓ Model weights loaded successfully for {model_key}")
@@ -296,7 +310,7 @@ class ModelTester:
             logger.debug(f"Exception details: {type(e).__name__}: {e}")
             raise
     
-    def load_vision_model(self, model_path: str, model_key: str) -> Tuple[Any, Any]:
+    def load_vision_model(self, model_path: str, model_key: str, repo_id: str = None) -> Tuple[Any, Any]:
         """Load a vision-language model"""
         logger.info(f"Loading vision model: {model_key}")
         logger.debug(f"Model path: {model_path}")
@@ -309,8 +323,9 @@ class ModelTester:
         
         try:
             logger.debug(f"Loading processor for vision model {model_key}...")
+            processor_repo = repo_id if repo_id else model_path
             processor = AutoProcessor.from_pretrained(
-                model_path,
+                processor_repo,
                 trust_remote_code=True
             )
             logger.debug(f"✓ Processor loaded successfully for {model_key}")
@@ -321,6 +336,15 @@ class ModelTester:
                 "torch_dtype": torch.float16 if self.device == "cuda" else torch.float32,
             }
             
+            # Configure FlashAttention2 for vision model
+            try:
+                import flash_attn
+                logger.debug(f"FlashAttention2 detected - enabling for vision model {model_key}")
+                model_kwargs["attn_implementation"] = "flash_attention_2"
+            except ImportError:
+                logger.debug(f"FlashAttention2 not available - using standard attention for vision model {model_key}")
+                model_kwargs["attn_implementation"] = "eager"
+            
             if self.device == "cuda":
                 logger.debug(f"Using CUDA configuration for vision model {model_key}")
                 model_kwargs["device_map"] = "auto"
@@ -330,8 +354,10 @@ class ModelTester:
             logger.debug(f"Vision model kwargs: {model_kwargs}")
             logger.info(f"Loading vision model weights for {model_key}... (this may take a while)")
             
+            # Use repo_id for vision model loading too
+            model_repo = repo_id if repo_id else model_path
             model = AutoModelForCausalLM.from_pretrained(
-                model_path,
+                model_repo,
                 **model_kwargs
             )
             logger.info(f"✓ Vision model weights loaded successfully for {model_key}")
@@ -512,7 +538,8 @@ class ModelTester:
             logger.info(f"Loading model {model_key} of type: {model_type}")
             if model_type == "vision-text-to-text":
                 logger.debug(f"Loading as vision-language model...")
-                self.load_vision_model(model_path, model_key)
+                repo_id = model_info.get('repo_id', model_key)
+                self.load_vision_model(model_path, model_key, repo_id)
                 # Combine vision, document processing, and image QA prompts for comprehensive testing
                 prompts = (self.vision_prompts[:2] + 
                           self.document_prompts[:3] + 
@@ -522,7 +549,8 @@ class ModelTester:
                 logger.info(f"✓ Vision model loaded. Will test {len(prompts)} prompts (vision + OCR + image QA)")
             else:
                 logger.debug(f"Loading as text-only model...")
-                self.load_text_model(model_path, model_key)
+                repo_id = model_info.get('repo_id', model_key)
+                self.load_text_model(model_path, model_key, repo_id)
                 prompts = self.test_prompts
                 generation_func = self.generate_text_response
                 logger.info(f"✓ Text model loaded. Will test {len(prompts)} prompts")
