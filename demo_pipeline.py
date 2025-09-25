@@ -25,7 +25,9 @@ def demo_download_phase():
     logger.info("=== SIMULATING MODEL DOWNLOADS ===")
     
     models = [
-        ("phi-3.5-vision-instruct", "microsoft/Phi-3.5-vision-instruct", 2.2)
+        ("llama-3.2-1b", "meta-llama/Llama-3.2-1B", 1.2),
+        ("tinyllama", "TinyLlama/TinyLlama-1.1B-Chat-v1.0", 0.3),
+        ("smolvlm-instruct", "HuggingFaceTB/SmolVLM-Instruct", 1.1)
     ]
     
     results = {}

@@ -22,19 +22,44 @@ class ModelDownloader:
         self.models_dir.mkdir(exist_ok=True)
         logger.debug(f"📁 Models directory set to: {self.models_dir}")
         
-        # Core model configurations - updated to only include Phi-3.5-vision-instruct
+        # Core model configurations - updated with three tool-selection focused models  
         self.model_configs = {
-            "phi-3.5-vision-instruct": {
-                "hf_repo": "microsoft/Phi-3.5-vision-instruct",
+            "llama-3.2-1b": {
+                "hf_repo": "meta-llama/Llama-3.2-1B",
+                "type": "text-generation",
                 "quantized_alternatives": [
-                    "Phi-3.5-vision-instruct.Q4_K_M.gguf",
-                    "Phi-3.5-vision-instruct.Q2_K.gguf",
-                    "Phi-3.5-vision-instruct.q4_0.gguf"
+                    "Llama-3.2-1B.Q4_K_M.gguf",
+                    "Llama-3.2-1B.Q2_K.gguf",
+                    "Llama-3.2-1B.q4_0.gguf"
                 ],
                 "size_category": "small",
-                "use_quantized": True,
-                "estimated_size_gb": 2.2,
-                "type": "vision-text-to-text"  # Special type for vision model
+                "use_quantized": False,  # Use standard model for better tool selection
+                "estimated_size_gb": 1.2
+            },
+            "tinyllama": {
+                "hf_repo": "TinyLlama/TinyLlama-1.1B-Chat-v1.0",
+                "type": "text-generation", 
+                "quantized_alternatives": [
+                    "TinyLlama-1.1B-Chat-v1.0.Q4_K_M.gguf",
+                    "TinyLlama-1.1B-Chat-v1.0.Q2_K.gguf",
+                    "TinyLlama-1.1B-Chat-v1.0.q4_0.gguf"
+                ],
+                "size_category": "tiny",
+                "use_quantized": False,  # Use standard model for better tool selection
+                "estimated_size_gb": 0.3
+            },
+            "smolvlm-instruct": {
+                "hf_repo": "HuggingFaceTB/SmolVLM-Instruct",
+                "type": "vision-text-to-text",
+                "quantized_alternatives": [
+                    "SmolVLM-Instruct.Q4_K_M.gguf",
+                    "SmolVLM-Instruct.Q2_K.gguf", 
+                    "SmolVLM-Instruct.q4_0.gguf"
+                ],
+                "size_category": "small",
+                "use_quantized": True,  # Prefer 4-bit Q4_K_M GGUF as requested
+                "estimated_size_gb": 1.1,
+                "prefer_q4_k_m": True  # Specific preference for Q4_K_M quantization
             }
         }
         logger.debug(f"🔍 Model configurations loaded: {list(self.model_configs.keys())}")
@@ -360,7 +385,7 @@ def main():
     
     # Test download
     logger.info("⬇️ Testing download:")
-    result = downloader.download_model("phi-3.5-vision-instruct")
+    result = downloader.download_model("tinyllama")
     logger.info(f"Download result: {result}")
 
 if __name__ == "__main__":

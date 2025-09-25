@@ -40,16 +40,18 @@ class ModelTester:
         self.device = device if device != "auto" else ("cuda" if torch.cuda.is_available() else "cpu")
         self.benchmark_runner = BenchmarkRunner(sampling_interval=0.1)
         
-        # Sample prompts for testing (web-search style)
-        self.test_prompts = [
-            "What is the capital of France?",
-            "Explain quantum computing in simple terms.",
-            "How do you cook pasta properly?",
-            "What are the benefits of renewable energy?",
-            "Write a short story about a robot discovering emotions.",
-            "List the top 5 programming languages in 2024.",
-            "Describe the process of photosynthesis.",
-            "What is the difference between AI and machine learning?"
+        # Tool selection prompts for testing model ability to choose appropriate tools
+        self.tool_selection_prompts = [
+            "Get the public information about Tom Brady, use web-search tool.",
+            "Search for the latest stock price of Tesla using web-search tool.",
+            "Find information about climate change effects using web-search tool.",
+            "Look up the definition of quantum computing using web-search tool.",
+            "Research the current population of Japan using web-search tool.",
+            "Calculate 30% of 12000.",
+            "What is 25 * 48 + 137?",
+            "Compute the square root of 2025.",
+            "Calculate the compound interest on $5000 at 3% for 5 years.",
+            "Find the area of a circle with radius 7.5."
         ]
         
         # Vision prompts for vision-capable models
@@ -57,6 +59,15 @@ class ModelTester:
             "Describe what you see in this image.",
             "What objects are present in this image?",
             "What is the main subject of this image?"
+        ]
+        
+        # Image analysis tool selection prompts - for models to recognize they need image analysis tools
+        self.image_analysis_prompts = [
+            "User uploaded image, caption the purchase order details.",
+            "User uploaded image, extract and list all product information.",
+            "User uploaded image, identify the document type and summarize contents.",
+            "User uploaded image, extract all monetary amounts and totals.",
+            "User uploaded image, caption the business card details."
         ]
         
         # Document processing prompts for OCR and document understanding
@@ -117,7 +128,13 @@ class ModelTester:
         """Categorize prompt type for better testing context"""
         prompt_lower = prompt.lower()
         
-        if any(keyword in prompt_lower for keyword in ['extract', 'ocr', 'text from', 'visible text', 'handwritten']):
+        if any(keyword in prompt_lower for keyword in ['web-search tool', 'search for', 'look up', 'find information', 'research']):
+            return "🔍 Web Search Tool"
+        elif any(keyword in prompt_lower for keyword in ['calculate', 'compute', 'what is', '*', '+', '-', '/', '%', 'area', 'interest']):
+            return "🧮 Calculation Tool"  
+        elif any(keyword in prompt_lower for keyword in ['user uploaded image', 'caption the', 'extract', 'identify the document']):
+            return "🖼️ Image Analysis Tool"
+        elif any(keyword in prompt_lower for keyword in ['extract', 'ocr', 'text from', 'visible text', 'handwritten']):
             return "📄 OCR"
         elif any(keyword in prompt_lower for keyword in ['document', 'invoice', 'receipt', 'form', 'letter', 'type of document']):
             return "📋 Document Analysis"
@@ -540,20 +557,20 @@ class ModelTester:
                 logger.debug(f"Loading as vision-language model...")
                 repo_id = model_info.get('repo_id', model_key)
                 self.load_vision_model(model_path, model_key, repo_id)
-                # Combine vision, document processing, and image QA prompts for comprehensive testing
-                prompts = (self.vision_prompts[:2] + 
-                          self.document_prompts[:3] + 
-                          self.image_qa_prompts[:2] + 
-                          self.test_prompts[:2])  # Mix of different prompt types
+                # Combine tool selection, vision, and image analysis prompts for comprehensive testing
+                prompts = (self.tool_selection_prompts[:3] + 
+                          self.image_analysis_prompts[:2] + 
+                          self.vision_prompts[:2] + 
+                          self.document_prompts[:2])  # Mix of tool selection and vision prompts
                 generation_func = self.generate_vision_response
-                logger.info(f"✓ Vision model loaded. Will test {len(prompts)} prompts (vision + OCR + image QA)")
+                logger.info(f"✓ Vision model loaded. Will test {len(prompts)} prompts (tool selection + vision + image analysis)")
             else:
                 logger.debug(f"Loading as text-only model...")
                 repo_id = model_info.get('repo_id', model_key)
                 self.load_text_model(model_path, model_key, repo_id)
-                prompts = self.test_prompts
+                prompts = self.tool_selection_prompts  # Focus on tool selection for text models
                 generation_func = self.generate_text_response
-                logger.info(f"✓ Text model loaded. Will test {len(prompts)} prompts")
+                logger.info(f"✓ Text model loaded. Will test {len(prompts)} tool selection prompts")
             
             # Test each prompt
             total_prompts = min(5, len(prompts))

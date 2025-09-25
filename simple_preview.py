@@ -22,23 +22,46 @@ def format_size(size_gb: float) -> str:
 def get_models_config():
     """Get model configuration directly without importing heavy modules"""
     return {
-        "phi-3.5-vision-instruct": {
-            "primary": "microsoft/Phi-3.5-vision-instruct",
+        "llama-3.2-1b": {
+            "primary": "meta-llama/Llama-3.2-1B",
             "quantized_alternatives": [
-                "Phi-3.5-vision-instruct.Q4_K_M.gguf",
-                "Phi-3.5-vision-instruct.Q2_K.gguf",
-                "Phi-3.5-vision-instruct.q4_0.gguf"
+                "Llama-3.2-1B.Q4_K_M.gguf",
+                "Llama-3.2-1B.Q2_K.gguf",
+                "Llama-3.2-1B.q4_0.gguf"
+            ],
+            "type": "text-generation",
+            "estimated_size_gb": 1.2,
+            "prefer_q2k": False
+        },
+        "tinyllama": {
+            "primary": "TinyLlama/TinyLlama-1.1B-Chat-v1.0",
+            "quantized_alternatives": [
+                "TinyLlama-1.1B-Chat-v1.0.Q4_K_M.gguf",
+                "TinyLlama-1.1B-Chat-v1.0.Q2_K.gguf",
+                "TinyLlama-1.1B-Chat-v1.0.q4_0.gguf"
+            ],
+            "type": "text-generation",
+            "estimated_size_gb": 0.3,
+            "prefer_q2k": False
+        },
+        "smolvlm-instruct": {
+            "primary": "HuggingFaceTB/SmolVLM-Instruct",
+            "quantized_alternatives": [
+                "SmolVLM-Instruct.Q4_K_M.gguf",
+                "SmolVLM-Instruct.Q2_K.gguf",
+                "SmolVLM-Instruct.q4_0.gguf"
             ],
             "type": "vision-text-to-text",
-            "estimated_size_gb": 2.2,
-            "prefer_q2k": False  # Q4_K_M preferred for vision model
+            "estimated_size_gb": 1.1,
+            "prefer_q4k_m": True  # Specific Q4_K_M preference
         }
     }
 
 def get_prompt_counts():
     """Get prompt counts without importing model_tester"""
     return {
-        "general_text": 8,
+        "tool_selection": 10,
+        "image_analysis": 5,
         "vision_basic": 3,
         "document_ocr": 10,
         "image_qa": 10
@@ -97,19 +120,20 @@ def main():
         print("-" * 30)
         
         # Show prompt categories
-        print(f"📝 General Text Prompts: {prompt_counts['general_text']} prompts")
+        print(f"� Tool Selection Prompts: {prompt_counts['tool_selection']} prompts")
+        print(f"🖼️  Image Analysis Prompts: {prompt_counts['image_analysis']} prompts")
         print(f"👁️  Vision Prompts: {prompt_counts['vision_basic']} prompts")
         print(f"📄 Document/OCR Prompts: {prompt_counts['document_ocr']} prompts")
         print(f"❓ Image QA Prompts: {prompt_counts['image_qa']} prompts")
         
-        total_text_prompts = prompt_counts['general_text']
-        total_vision_prompts = prompt_counts['vision_basic'] + prompt_counts['document_ocr'] + prompt_counts['image_qa']
+        total_text_prompts = prompt_counts['tool_selection']
+        total_vision_prompts = prompt_counts['tool_selection'] + prompt_counts['image_analysis'] + prompt_counts['vision_basic'] + prompt_counts['document_ocr']
         
         print()
         print("🎯 TESTING STRATEGY:")
         print("-" * 20)
-        print(f"   • Text-only models: {total_text_prompts} prompts each")
-        print(f"   • Vision models: 9 mixed prompts each (vision + OCR + QA)")
+        print(f"   • Text-only models: {total_text_prompts} tool selection prompts each")
+        print(f"   • Vision models: 9 mixed prompts each (tool selection + image analysis + vision)")
         print(f"   • Max prompts per model: 5 (for efficiency)")
         
         print()
