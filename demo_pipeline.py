@@ -25,8 +25,8 @@ def demo_download_phase():
     logger.info("=== SIMULATING MODEL DOWNLOADS ===")
     
     models = [
-        ("llama-3.2-1b", "bartowski/Llama-3.2-1B-Instruct-GGUF", 0.5),  # Q2_K size estimate
-        ("tinyllama", "TheBloke/TinyLlama-1.1B-Chat-v1.0-GGUF", 0.15)  # Q2_K size estimate
+        ("llama-3.2-1b", "unsloth/Llama-3.2-1B-Instruct", 1.2),  # Llama-3.2-1B ~1.2GB
+        ("tinyllama", "TinyLlama/TinyLlama-1.1B-Chat-v1.0", 0.3)  # TinyLlama ~300MB
     ]
     
     results = {}

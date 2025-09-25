@@ -22,25 +22,25 @@ class ModelDownloader:
         self.models_dir.mkdir(exist_ok=True)
         logger.debug(f"📁 Models directory set to: {self.models_dir}")
         
-        # Core model configurations - Q2_K.gguf quantization only
+        # Core model configurations - Llama-3.2-1B and TinyLlama as requested
         self.model_configs = {
             "llama-3.2-1b": {
-                "hf_repo": "bartowski/Llama-3.2-1B-Instruct-GGUF",  # Repository with GGUF files
+                "hf_repo": "unsloth/Llama-3.2-1B-Instruct",  # Public Llama-3.2-1B model
                 "type": "text-generation",
-                "quantized_alternatives": [],  # Let it auto-discover Q2_K files
+                "quantized_alternatives": [],  # Standard Transformers model
                 "size_category": "small",
-                "use_quantized": True,  # Use Q2_K quantized version only
-                "estimated_size_gb": 0.5,  # Reduced size estimate for Q2_K
-                "prefer_q2k": True  # Enable Q2_K preference for auto-discovery
+                "use_quantized": False,  # Use standard model
+                "estimated_size_gb": 1.2,  # ~1.2GB as requested
+                "prefer_q2k": False  # Standard model, no GGUF
             },
             "tinyllama": {
-                "hf_repo": "TheBloke/TinyLlama-1.1B-Chat-v1.0-GGUF",  # Repository with GGUF files
+                "hf_repo": "TinyLlama/TinyLlama-1.1B-Chat-v1.0",  # Original TinyLlama model
                 "type": "text-generation",
-                "quantized_alternatives": [],  # Let it auto-discover Q2_K files
+                "quantized_alternatives": [],  # Standard Transformers model
                 "size_category": "tiny",
-                "use_quantized": True,  # Use Q2_K quantized version only
-                "estimated_size_gb": 0.15,  # Reduced size estimate for Q2_K
-                "prefer_q2k": True  # Enable Q2_K preference for auto-discovery
+                "use_quantized": False,  # Use standard model
+                "estimated_size_gb": 0.3,  # ~300MB as requested
+                "prefer_q2k": False  # Standard model, no GGUF
             }
         }
         logger.debug(f"🔍 Model configurations loaded: {list(self.model_configs.keys())}")
@@ -192,13 +192,15 @@ class ModelDownloader:
             logger.debug(f"⬇️ Starting download of {repo_id}...")
             logger.info(f"Downloading {model_name} from {repo_id}...")
             
-            # Download the complete model
+            # Download the complete model without authentication
             downloaded_path = snapshot_download(
                 repo_id=repo_id,
                 local_dir=str(model_path),
                 local_dir_use_symlinks=False,
                 resume_download=True,
-                token=None  # Don't use authentication for public repos
+                token=None,  # Don't use authentication for public repos
+                allow_patterns=None,  # Download all files
+                ignore_patterns=None
             )
             
             # Count downloaded files

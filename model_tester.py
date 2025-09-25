@@ -249,6 +249,11 @@ class ModelTester:
         logger.debug(f"Model path: {model_path}")
         logger.debug(f"Device: {self.device}")
         
+        # Check if this is a GGUF model
+        if self.is_gguf_model(model_path):
+            logger.info(f"Detected GGUF model for {model_key}")
+            return self.load_gguf_model(model_path, model_key)
+        
         try:
             # Try to load tokenizer
             logger.debug(f"Loading tokenizer for {model_key}...")

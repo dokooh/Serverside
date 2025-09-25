@@ -23,22 +23,18 @@ def get_models_config():
     """Get model configuration directly without importing heavy modules"""
     return {
         "llama-3.2-1b": {
-            "primary": "bartowski/Llama-3.2-1B-Instruct-GGUF",
-            "quantized_alternatives": [
-                "Auto-discover Q2_K files"  # Q2_K quantization auto-discovery
-            ],
+            "primary": "unsloth/Llama-3.2-1B-Instruct",
+            "quantized_alternatives": [],  # No quantization, standard model
             "type": "text-generation",
-            "estimated_size_gb": 0.5,  # Reduced size for Q2_K
-            "q2k_only": True  # Only Q2_K quantization
+            "estimated_size_gb": 1.2,  # ~1.2GB as requested
+            "q2k_only": False  # Standard model
         },
         "tinyllama": {
-            "primary": "TheBloke/TinyLlama-1.1B-Chat-v1.0-GGUF",
-            "quantized_alternatives": [
-                "Auto-discover Q2_K files"  # Q2_K quantization auto-discovery
-            ],  
+            "primary": "TinyLlama/TinyLlama-1.1B-Chat-v1.0",
+            "quantized_alternatives": [],  # No quantization, standard model
             "type": "text-generation",
-            "estimated_size_gb": 0.15,  # Reduced size for Q2_K
-            "q2k_only": True  # Only Q2_K quantization
+            "estimated_size_gb": 0.3,  # ~300MB as requested
+            "q2k_only": False  # Standard model
         }
     }
 
@@ -81,7 +77,7 @@ def main():
             print(f"   📦 Repository: {config['primary']}")
             print(f"   🏷️  Type: {config['type']}")
             print(f"   📏 Estimated Size: {format_size(config.get('estimated_size_gb', 1.0))}")
-            print(f"   ⚙️  Quantization: {'✅ Q2_K only' if config.get('q2k_only') else '✅ Q2_K preferred' if config.get('prefer_q2k') else '✅ 4-bit preferred' if config.get('quantized_alternatives') else '❌ Full precision only'}")
+            print(f"   ⚙️  Quantization: {'✅ Q2_K only' if config.get('q2k_only') else '✅ Q2_K preferred' if config.get('prefer_q2k') else '✅ 4-bit preferred' if config.get('quantized_alternatives') and config['quantized_alternatives'] else '📦 Standard Transformers'}")
             
             # Add alternatives if available
             quantized_alts = config.get('quantized_alternatives', [])
