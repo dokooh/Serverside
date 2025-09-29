@@ -18,21 +18,47 @@ def demo_enhanced_testing():
     
     print(f"📊 TESTING OVERVIEW:")
     print(f"   • Models per test session: ALL available models")
-    print(f"   • Prompts per model: {len(tester.comprehensive_prompts)} (increased from 5)")
-    print(f"   • Prompt categories: 7 types")
-    print(f"   • Total test combinations: Models × {len(tester.comprehensive_prompts)} prompts")
+    print(f"   • Model-specific optimization: Llama-3.2-1B & TinyLlama prompts tailored")
+    print(f"   • Prompts per model: 10 optimized prompts each (increased from 5)")
+    print(f"   • JSON tool calling: All prompts expect JSON responses")
+    print(f"   • System prompts: Model-specific with few-shot examples")
+    print(f"   • Total test combinations: Models × 10 optimized prompts")
     print()
     
     print(f"🧪 COMPREHENSIVE PROMPT CATEGORIES:")
     print("-" * 60)
     
-    # Group prompts by category
+    # Show optimized prompts for both models
+    print("🤖 LLAMA-3.2-1B OPTIMIZED PROMPTS:")
+    llama_prompts = tester.get_model_prompts("llama-3.2-1b")
+    llama_system = tester.get_system_prompt("llama-3.2-1b")
+    
     categories = {}
-    for prompt in tester.comprehensive_prompts:
+    for prompt in llama_prompts:
         category = tester.categorize_prompt(prompt)
         if category not in categories:
             categories[category] = []
         categories[category].append(prompt)
+    
+    print(f"   System prompt: {len(llama_system)} chars - JSON tool calling with rule enforcement")
+    
+    for i, (category, prompts) in enumerate(sorted(categories.items()), 1):
+        print(f"   {i}. {category} ({len(prompts)} prompts)")
+        for j, prompt in enumerate(prompts, 1):
+            print(f"      {j}. {prompt[:70]}...")
+    
+    print("\n🤖 TINYLLAMA OPTIMIZED PROMPTS:")
+    tiny_prompts = tester.get_model_prompts("tinyllama")
+    tiny_system = tester.get_system_prompt("tinyllama")
+    
+    categories = {}
+    for prompt in tiny_prompts:
+        category = tester.categorize_prompt(prompt)
+        if category not in categories:
+            categories[category] = []
+        categories[category].append(prompt)
+    
+    print(f"   System prompt: {len(tiny_system)} chars - Few-shot examples with simple tasks")
     
     # Display each category with examples
     for i, (category, prompts) in enumerate(sorted(categories.items()), 1):
